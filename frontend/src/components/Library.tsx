@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { AuthUser } from "../lib/auth";
 
 export interface BookSummary {
   id: string;
@@ -7,9 +8,12 @@ export interface BookSummary {
   size_bytes: number;
   uploaded_at: string;
   audio_status?: "pending" | "generating" | "ready" | "failed";
+  uploader_email?: string | null;
+  uploader_name?: string | null;
 }
 
 interface Props {
+  user: AuthUser | null;
   onSelectBook: (book: BookSummary) => void;
   onBack: () => void;
   onGoUpload: () => void;
@@ -33,7 +37,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function Library({ onSelectBook, onBack, onGoUpload }: Props) {
+export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
   const [books, setBooks] = useState<BookSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,10 +143,11 @@ export function Library({ onSelectBook, onBack, onGoUpload }: Props) {
             {books.map((book) => {
               const status = book.audio_status ?? "pending";
               const cooking = status === "pending" || status === "generating";
+              const mine = !!(user && book.uploader_email && user.email === book.uploader_email);
               return (
                 <button
                   key={book.id}
-                  className={`book-card book-card-${status}`}
+                  className={`book-card book-card-${status}${mine ? " book-card-mine" : ""}`}
                   onClick={() => onSelectBook(book)}
                   title={book.title}
                 >
@@ -174,6 +179,11 @@ export function Library({ onSelectBook, onBack, onGoUpload }: Props) {
                     {status === "ready" && (
                       <div className="book-audio-badge book-audio-badge-ready">
                         ♪ ready
+                      </div>
+                    )}
+                    {mine && (
+                      <div className="book-mine-badge" title="내가 올린 책">
+                        MINE
                       </div>
                     )}
                   </div>

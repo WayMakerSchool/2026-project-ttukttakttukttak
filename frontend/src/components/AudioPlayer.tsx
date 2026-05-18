@@ -46,6 +46,8 @@ export function AudioPlayer({
   const [error, setError] = useState<string | null>(null);
   const [bars, setBars] = useState<number[]>(IDLE_BARS);
   const [chunkCount, setChunkCount] = useState(0);
+  const [editingPage, setEditingPage] = useState(false);
+  const [pageInputValue, setPageInputValue] = useState("");
 
   const playing = status === "generating" || status === "playing";
 
@@ -261,9 +263,44 @@ export function AudioPlayer({
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <span className="page-counter">
-            {page} / {pageCount}
-          </span>
+          {editingPage ? (
+            <input
+              type="number"
+              min={1}
+              max={pageCount}
+              className="page-counter-input"
+              value={pageInputValue}
+              onChange={(e) => setPageInputValue(e.target.value)}
+              onBlur={() => {
+                const n = parseInt(pageInputValue, 10);
+                if (!isNaN(n) && n >= 1 && n <= pageCount && n !== page) {
+                  onPageChange(n);
+                }
+                setEditingPage(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === "Escape") {
+                  setEditingPage(false);
+                }
+              }}
+              autoFocus
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          ) : (
+            <button
+              type="button"
+              className="page-counter page-counter-btn"
+              title="페이지 입력 (Enter로 이동)"
+              onClick={() => {
+                setPageInputValue(String(page));
+                setEditingPage(true);
+              }}
+            >
+              {page} / {pageCount}
+            </button>
+          )}
           <button
             className="icon-btn"
             aria-label="다음 페이지"

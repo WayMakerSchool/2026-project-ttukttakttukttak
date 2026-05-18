@@ -1,17 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import HTMLFlipBookRaw from "react-pageflip";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
-const MAX_PAGE_WIDTH = 720;
-const MIN_PAGE_WIDTH = 280;
-// Pixels of horizontal movement to count as a swipe; below this we treat it
-// as a tap so users can still tap on the page without accidentally flipping.
-const SWIPE_THRESHOLD = 55;
-const SWIPE_MAX_VERTICAL = 50;
-const SWIPE_MAX_DURATION_MS = 600;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const HTMLFlipBook = HTMLFlipBookRaw as unknown as any;
+
+type FlipMode = "spread" | "portrait";
+
+// Two-page spread kicks in once the viewport is wide enough for both pages to
+// be readable. Below this we fall back to single-page (book opens like a phone).
+const SPREAD_MIN_VIEWPORT = 820;
+
+// Per-page sizes, per mode.
+const PORTRAIT_MAX = 540;
+const PORTRAIT_MIN = 280;
+const SPREAD_MAX_PER_PAGE = 440;
+const SPREAD_MIN_PER_PAGE = 300;
+
+const PAGE_ASPECT = 1.4;
 
 interface Props {
   fileUrl: string;
@@ -21,24 +31,37 @@ interface Props {
   onLoadError?: (err: Error) => void;
 }
 
+function computeLayout(): { mode: FlipMode; pageWidth: number } {
+  if (typeof window === "undefined") {
+    return { mode: "spread", pageWidth: PORTRAIT_MAX };
+  }
+  const vw = window.innerWidth;
+  if (vw >= SPREAD_MIN_VIEWPORT) {
+    const perPage = Math.min(
+      SPREAD_MAX_PER_PAGE,
+      Math.max(SPREAD_MIN_PER_PAGE, Math.floor((vw - 80) / 2))
+    );
+    return { mode: "spread", pageWidth: perPage };
+  }
+  const single = Math.min(PORTRAIT_MAX, Math.max(PORTRAIT_MIN, vw - 48));
+  return { mode: "portrait", pageWidth: single };
+}
+
 export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError }: Props) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const flipBookRef = useRef<any>(null);
   const prevPageRef = useRef(page);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const swipeStart = useRef<{ x: number; y: number; t: number; id: number } | null>(null);
 
-  const [pageWidth, setPageWidth] = useState<number>(() => {
-    if (typeof window === "undefined") return MAX_PAGE_WIDTH;
-    return Math.min(MAX_PAGE_WIDTH, Math.max(MIN_PAGE_WIDTH, window.innerWidth - 32));
-  });
+  const [layout, setLayout] = useState(computeLayout);
+  const { mode, pageWidth } = layout;
+  const pageHeight = Math.round(pageWidth * PAGE_ASPECT);
 
-  // Responsive page width — react-pdf re-rasterizes when width changes.
+  // Responsive layout.
   useEffect(() => {
     function update() {
-      const w = Math.min(MAX_PAGE_WIDTH, Math.max(MIN_PAGE_WIDTH, window.innerWidth - 32));
-      setPageWidth(w);
+      setLayout(computeLayout());
     }
-    update();
     window.addEventListener("resize", update);
     window.addEventListener("orientationchange", update);
     return () => {
@@ -47,18 +70,7 @@ export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError 
     };
   }, []);
 
-  // Keyboard navigation.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.key === "ArrowLeft") onPageChange(Math.max(1, page - 1));
-      else if (e.key === "ArrowRight") onPageChange(Math.min(pageCount, page + 1));
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [page, pageCount, onPageChange]);
-
-  // Audio init.
+  // Page-flip sound.
   useEffect(() => {
     const a = new Audio("/page-flip.mp3");
     a.preload = "auto";
@@ -69,99 +81,109 @@ export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError 
     };
   }, []);
 
-  // On page change: play flip sound + 3D flip animation.
-  useEffect(() => {
-    if (page === prevPageRef.current) return;
-    const forward = page > prevPageRef.current;
-    prevPageRef.current = page;
-
+  function playFlipSound() {
     const a = audioRef.current;
-    if (a) {
-      try {
-        a.currentTime = 0;
-        const p = a.play();
-        if (p && typeof p.catch === "function") p.catch(() => {});
-      } catch {
-        /* ignore autoplay block */
-      }
+    if (!a) return;
+    try {
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {
+      /* autoplay block */
     }
-
-    const el = wrapRef.current;
-    if (el && typeof el.animate === "function") {
-      const dir = forward ? -1 : 1;
-      el.animate(
-        [
-          { transform: "perspective(1500px) rotateY(0deg)", opacity: 1, offset: 0 },
-          {
-            transform: `perspective(1500px) rotateY(${dir * 55}deg) translateX(${dir * -24}px)`,
-            opacity: 0.15,
-            offset: 0.45,
-          },
-          {
-            transform: `perspective(1500px) rotateY(${dir * -25}deg) translateX(${dir * 14}px)`,
-            opacity: 0.45,
-            offset: 0.6,
-          },
-          { transform: "perspective(1500px) rotateY(0deg)", opacity: 1, offset: 1 },
-        ],
-        { duration: 560, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
-      );
-    }
-  }, [page]);
-
-  // Swipe gestures — pointerdown/up so a single handler works for both
-  // mouse-drag (desktop) and touch (iPad / phone).
-  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    swipeStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      t: Date.now(),
-      id: e.pointerId,
-    };
   }
 
-  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
-    const start = swipeStart.current;
-    swipeStart.current = null;
-    if (!start || start.id !== e.pointerId) return;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    const dt = Date.now() - start.t;
-    if (
-      dt > SWIPE_MAX_DURATION_MS ||
-      Math.abs(dy) > SWIPE_MAX_VERTICAL ||
-      Math.abs(dx) < SWIPE_THRESHOLD
-    ) {
-      return;
+  // Keyboard navigation goes through the flipbook so the user sees the
+  // same 3D flip animation as a finger drag.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const inst = flipBookRef.current?.pageFlip?.();
+      if (!inst) return;
+      if (e.key === "ArrowLeft") inst.flipPrev();
+      else if (e.key === "ArrowRight") inst.flipNext();
     }
-    if (dx < 0) {
-      onPageChange(Math.min(pageCount, page + 1));
-    } else {
-      onPageChange(Math.max(1, page - 1));
-    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Mirror external page changes (dock buttons, TOC jump, page input) into
+  // the flipbook. Defer to next frame so concurrent unmounts (e.g. TOC drawer
+  // closing) finish first; otherwise the flip() call can no-op silently.
+  useEffect(() => {
+    if (page === prevPageRef.current) return;
+    prevPageRef.current = page;
+    const targetIdx =
+      mode === "spread" ? Math.floor((page - 1) / 2) * 2 : page - 1;
+    const handle = requestAnimationFrame(() => {
+      const inst = flipBookRef.current?.pageFlip?.();
+      if (inst && typeof inst.flip === "function") {
+        try {
+          inst.flip(targetIdx);
+        } catch (err) {
+          console.warn("[PdfViewer] flip failed", err);
+        }
+      }
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [page, mode]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handleFlip(e: any) {
+    const next = (e.data as number) + 1;
+    if (next === prevPageRef.current) return;
+    prevPageRef.current = next;
+    onPageChange(next);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function handleChangeState(e: any) {
+    if (e.data === "flipping") playFlipSound();
   }
 
   return (
-    <div
-      className="pdf-frame"
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerCancel={() => (swipeStart.current = null)}
-    >
-      <div ref={wrapRef} className="pdf-flip-wrap">
-        <Document
-          file={fileUrl}
-          loading={<div className="pdf-loading">PDF 로딩 중…</div>}
-          onLoadError={onLoadError}
+    <div className={`pdf-frame book-frame book-frame-${mode}`}>
+      <Document
+        file={fileUrl}
+        loading={<div className="pdf-loading">PDF 로딩 중…</div>}
+        onLoadError={onLoadError}
+      >
+        <HTMLFlipBook
+          // Forcing a remount on mode switch lets the library re-measure for
+          // single vs spread without weird half-states.
+          key={mode}
+          ref={flipBookRef}
+          width={pageWidth}
+          height={pageHeight}
+          size="fixed"
+          minWidth={Math.min(PORTRAIT_MIN, SPREAD_MIN_PER_PAGE)}
+          maxWidth={Math.max(PORTRAIT_MAX, SPREAD_MAX_PER_PAGE)}
+          minHeight={Math.round(SPREAD_MIN_PER_PAGE * PAGE_ASPECT)}
+          maxHeight={Math.round(PORTRAIT_MAX * PAGE_ASPECT)}
+          drawShadow
+          maxShadowOpacity={0.55}
+          showCover={false}
+          mobileScrollSupport={false}
+          usePortrait={mode === "portrait"}
+          flippingTime={700}
+          startPage={Math.max(0, page - 1)}
+          className="flipbook"
+          style={{}}
+          onFlip={handleFlip}
+          onChangeState={handleChangeState}
         >
-          <Page
-            pageNumber={page}
-            width={pageWidth}
-            renderAnnotationLayer={false}
-            renderTextLayer={false}
-          />
-        </Document>
-      </div>
+          {Array.from({ length: pageCount }, (_, i) => (
+            <div key={i + 1} className="flip-page">
+              <Page
+                pageNumber={i + 1}
+                width={pageWidth}
+                renderAnnotationLayer={false}
+                renderTextLayer={false}
+              />
+            </div>
+          ))}
+        </HTMLFlipBook>
+      </Document>
     </div>
   );
 }

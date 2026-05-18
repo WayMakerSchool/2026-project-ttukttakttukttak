@@ -25,6 +25,34 @@ def render_thumbnail(pdf_bytes: bytes, max_width: int = 480) -> bytes:
         doc.close()
 
 
+def extract_toc(pdf_bytes: bytes) -> list[dict]:
+    """Return the PDF's built-in outline as [{level, title, page}, ...].
+    1-indexed page numbers. Empty if the PDF has no outline."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    try:
+        raw = doc.get_toc()  # [[level, title, page], ...]
+    finally:
+        doc.close()
+    out: list[dict] = []
+    seen_pages: set[int] = set()
+    for entry in raw:
+        try:
+            level = int(entry[0])
+            title = str(entry[1]).strip()
+            page = int(entry[2])
+        except (IndexError, ValueError, TypeError):
+            continue
+        if not title or page < 1:
+            continue
+        # Deduplicate consecutive identical pages.
+        key = page
+        if key in seen_pages:
+            continue
+        seen_pages.add(key)
+        out.append({"level": max(1, level), "title": title, "page": page})
+    return out
+
+
 def normalize_cover_image(image_bytes: bytes, max_width: int = 480) -> bytes:
     """Accept any common image format (JPEG/PNG/WebP/...) and return a
     PNG-encoded thumbnail bounded by `max_width`. Preserves aspect ratio."""

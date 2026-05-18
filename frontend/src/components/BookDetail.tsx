@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { authHeaders, type AuthUser } from "../lib/auth";
 
 export interface BookDetailData {
   id: string;
@@ -8,6 +9,8 @@ export interface BookDetailData {
   uploaded_at: string;
   audio_status?: "pending" | "generating" | "ready" | "failed";
   description?: string | null;
+  uploader_email?: string | null;
+  uploader_name?: string | null;
 }
 
 export interface Review {
@@ -20,8 +23,10 @@ export interface Review {
 
 interface Props {
   bookId: string;
+  user: AuthUser | null;
   onBack: () => void;
   onRead: (book: BookDetailData) => void;
+  onDeleted: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -55,7 +60,7 @@ function Stars({ value, onChange }: { value: number; onChange?: (n: number) => v
   );
 }
 
-export function BookDetail({ bookId, onBack, onRead }: Props) {
+export function BookDetail({ bookId, user, onBack, onRead, onDeleted }: Props) {
   const [book, setBook] = useState<BookDetailData | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +71,29 @@ export function BookDetail({ bookId, onBack, onRead }: Props) {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!book || !user) return;
+    if (!window.confirm(`정말 "${book.title}"을(를) 삭제할까요?\n이 책의 음악 캐시, 리뷰까지 모두 사라집니다.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch(`/books/${bookId}`, {
+        method: "DELETE",
+        headers: { ...authHeaders(user) },
+      });
+      if (!res.ok && res.status !== 204) {
+        const body = await res.text();
+        throw new Error(body || `status ${res.status}`);
+      }
+      onDeleted();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setDeleting(false);
+    }
+  }
 
   async function loadAll() {
     try {
@@ -197,7 +225,22 @@ export function BookDetail({ bookId, onBack, onRead }: Props) {
                       새로고침
                     </button>
                   )}
+                  {user && book.uploader_email && user.email === book.uploader_email && (
+                    <button
+                      className="cta-danger"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      type="button"
+                    >
+                      {deleting ? "삭제 중…" : "삭제"}
+                    </button>
+                  )}
                 </div>
+                {book.uploader_name && (
+                  <div className="detail-uploader">
+                    올린이 · <em>{book.uploader_name}</em>
+                  </div>
+                )}
               </div>
             </div>
 

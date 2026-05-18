@@ -3,6 +3,11 @@ import { PdfViewer } from "./components/PdfViewer";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { Library, type BookSummary } from "./components/Library";
 import { BookDetail, type BookDetailData } from "./components/BookDetail";
+import { TocPanel } from "./components/TocPanel";
+import { FlatPdfViewer } from "./components/FlatPdfViewer";
+import { TextReader } from "./components/TextReader";
+import { AuthButton } from "./components/AuthButton";
+import { authHeaders, loadUser, type AuthUser } from "./lib/auth";
 import { moodAccent, moodToCss } from "./lib/mood-colors";
 
 type Mood = {
@@ -15,6 +20,15 @@ type Mood = {
 };
 
 type View = "landing" | "library" | "detail" | "reader";
+type ViewMode = "book" | "page" | "scroll" | "novel" | "comfort";
+
+const VIEW_MODES: { id: ViewMode; label: string; sub: string }[] = [
+  { id: "book", label: "Book", sub: "3D 책장 넘김" },
+  { id: "page", label: "Page", sub: "한 장씩 보기" },
+  { id: "scroll", label: "Scroll", sub: "전체 스크롤" },
+  { id: "novel", label: "Novel", sub: "웹소설 형식" },
+  { id: "comfort", label: "Comfort", sub: "큰 글씨 세피아" },
+];
 
 const STEPS = [
   {
@@ -84,6 +98,10 @@ export default function App() {
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploadCover, setUploadCover] = useState<File | null>(null);
   const [uploadCoverUrl, setUploadCoverUrl] = useState<string | null>(null);
+  const [tocOpen, setTocOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("book");
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(() => loadUser());
 
   useEffect(() => {
     if (!uploadCover) {
@@ -152,7 +170,11 @@ export default function App() {
       const desc = uploadDescription.trim();
       if (desc) fd.append("description", desc);
       if (uploadCover) fd.append("cover", uploadCover);
-      const res = await fetch("/upload", { method: "POST", body: fd });
+      const res = await fetch("/upload", {
+        method: "POST",
+        body: fd,
+        headers: { ...authHeaders(user) },
+      });
       if (!res.ok) throw new Error(`업로드 실패 (${res.status})`);
       const data = await res.json();
       // Land on the detail page so the user can see their description,
@@ -170,6 +192,9 @@ export default function App() {
 
   return (
     <div className="app" style={accentStyle}>
+      <div className="app-auth">
+        <AuthButton user={user} onChange={setUser} />
+      </div>
       {view === "landing" && (
         <section className="landing">
           <div className="hero">
@@ -378,6 +403,7 @@ export default function App() {
 
       {view === "library" && (
         <Library
+          user={user}
           onSelectBook={openDetail}
           onBack={() => setView("landing")}
           onGoUpload={backToLandingAndScrollUpload}
@@ -387,8 +413,13 @@ export default function App() {
       {view === "detail" && detailBookId && (
         <BookDetail
           bookId={detailBookId}
+          user={user}
           onBack={() => setView("library")}
           onRead={readBook}
+          onDeleted={() => {
+            setDetailBookId(null);
+            setView("library");
+          }}
         />
       )}
 
@@ -410,6 +441,62 @@ export default function App() {
                 </svg>
                 <span>라이브러리</span>
               </button>
+              <button className="reader-link" onClick={() => setTocOpen(true)} title="목차">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <circle cx="4" cy="6" r="1" />
+                  <circle cx="4" cy="12" r="1" />
+                  <circle cx="4" cy="18" r="1" />
+                </svg>
+                <span>목차</span>
+              </button>
+
+              <div className="mode-picker">
+                <button
+                  className="reader-link"
+                  onClick={() => setModeMenuOpen((v) => !v)}
+                  title="보기 모드"
+                  aria-expanded={modeMenuOpen}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span>{VIEW_MODES.find((m) => m.id === viewMode)?.label ?? "Book"}</span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {modeMenuOpen && (
+                  <>
+                    <div
+                      className="mode-menu-backdrop"
+                      onClick={() => setModeMenuOpen(false)}
+                      aria-hidden="true"
+                    />
+                    <div className="mode-menu" role="menu">
+                      {VIEW_MODES.map((m) => (
+                        <button
+                          key={m.id}
+                          className={`mode-menu-item${m.id === viewMode ? " mode-menu-item-active" : ""}`}
+                          onClick={() => {
+                            setViewMode(m.id);
+                            setModeMenuOpen(false);
+                          }}
+                          role="menuitem"
+                        >
+                          <span className="mode-menu-label">{m.label}</span>
+                          <span className="mode-menu-sub">{m.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
             <div className="reader-mood">
               <span>now playing</span>
@@ -421,8 +508,8 @@ export default function App() {
             />
           </header>
 
-          <div className="reader-stage">
-            {pdfUrl && (
+          <div className={`reader-stage reader-stage-${viewMode}`}>
+            {pdfUrl && viewMode === "book" && (
               <PdfViewer
                 fileUrl={pdfUrl}
                 page={page}
@@ -437,6 +524,29 @@ export default function App() {
                 }}
               />
             )}
+            {pdfUrl && (viewMode === "page" || viewMode === "scroll") && (
+              <FlatPdfViewer
+                fileUrl={pdfUrl}
+                page={page}
+                pageCount={pageCount}
+                onPageChange={setPage}
+                mode={viewMode}
+                onLoadError={(err) => {
+                  console.error("PDF load failed", err);
+                  resetBook();
+                  setError("PDF를 불러올 수 없어요. 다시 업로드하거나 다른 책을 골라주세요.");
+                }}
+              />
+            )}
+            {(viewMode === "novel" || viewMode === "comfort") && (
+              <TextReader
+                bookId={bookId}
+                page={page}
+                pageCount={pageCount}
+                onPageChange={setPage}
+                mode={viewMode}
+              />
+            )}
           </div>
 
           <AudioPlayer
@@ -446,6 +556,14 @@ export default function App() {
             onPageChange={setPage}
             currentMood={currentMood}
             accentLabel={accent.label}
+          />
+
+          <TocPanel
+            bookId={bookId}
+            open={tocOpen}
+            currentPage={page}
+            onClose={() => setTocOpen(false)}
+            onJump={(p) => setPage(p)}
           />
         </section>
       )}

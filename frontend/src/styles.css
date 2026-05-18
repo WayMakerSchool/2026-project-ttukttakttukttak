@@ -775,6 +775,42 @@ button {
   letter-spacing: 0.04em;
 }
 
+.page-counter-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 150ms var(--ease), color 150ms var(--ease);
+}
+
+.page-counter-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.page-counter-input {
+  width: 70px;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.page-counter-input::-webkit-inner-spin-button,
+.page-counter-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .mood-badge {
   display: flex;
   align-items: center;
@@ -870,6 +906,225 @@ button {
   opacity: 0.75;
 }
 
+/* ============ Mode picker (view mode dropdown) ============ */
+
+.mode-picker {
+  position: relative;
+}
+
+.mode-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+}
+
+.mode-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 23;
+  min-width: 200px;
+  padding: 6px;
+  background: rgba(20, 20, 28, 0.96);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fade-up 200ms var(--ease) both;
+}
+
+.mode-menu-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: inherit;
+  text-align: left;
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+
+.mode-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.mode-menu-item-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mode-menu-item-active:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mode-menu-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.mode-menu-sub {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.mode-menu-item-active .mode-menu-sub {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+/* ============ Flat PDF viewer (page mode) ============ */
+
+.flat-frame {
+  background: #fafafa;
+  border-radius: 4px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 60px var(--accent-glow);
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.flat-frame .react-pdf__Page {
+  display: block;
+}
+
+/* ============ Scroll PDF viewer ============ */
+
+.scroll-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  background: transparent;
+  box-shadow: none;
+  width: 100%;
+  padding: 0;
+}
+
+.scroll-page {
+  background: #fafafa;
+  border-radius: 4px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.scroll-page .react-pdf__Page {
+  display: block;
+}
+
+/* ============ Text reader (novel / comfort) ============ */
+
+.text-reader {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 8px;
+}
+
+.text-reader-novel {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.85;
+  color: #e6e6ec;
+  letter-spacing: 0.005em;
+}
+
+.text-reader-comfort {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.85;
+  color: #2b2620;
+  letter-spacing: 0.005em;
+  max-width: 680px;
+}
+
+.text-reader-comfort .text-reader-page {
+  background: #f5ecd9;
+  color: #2b2620;
+  border-radius: 12px;
+  padding: 40px 36px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.text-reader-novel .text-reader-page {
+  padding: 28px 4px 40px;
+  border-bottom: 1px solid var(--border);
+}
+
+.text-reader-page:last-child {
+  border-bottom: none;
+}
+
+.text-reader-pagenum {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.text-reader-comfort .text-reader-pagenum {
+  color: #8a7a60;
+}
+
+.text-reader-body p {
+  margin: 0 0 1em;
+  white-space: pre-wrap;
+}
+
+.text-reader-body p:last-child {
+  margin-bottom: 0;
+}
+
+.text-reader-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+.text-reader-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Reader stage overrides per mode */
+
+.reader-stage-scroll,
+.reader-stage-novel,
+.reader-stage-comfort {
+  align-items: center;
+  place-items: start center;
+}
+
+.reader-stage-page {
+  align-items: center;
+}
+
 /* ============ PDF flip wrapper ============ */
 
 .pdf-flip-wrap {
@@ -877,6 +1132,44 @@ button {
   transform-origin: center center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+/* react-pageflip handles its own shadows + 3D transform, so the outer
+   frame just needs to host it (no extra glow/shadow doubled-up). */
+.book-frame {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  animation: fade-up 500ms var(--ease) both;
+}
+
+.flipbook {
+  margin: 0 auto;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 80px var(--accent-glow));
+  transition: filter 1200ms var(--ease);
+}
+
+.flip-page {
+  background: #fafafa;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.flip-page .react-pdf__Page {
+  width: 100%;
+  display: block;
+  background: #fafafa;
+}
+
+.flip-page .react-pdf__Page__canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
 }
 
 /* ============ Library ============ */
@@ -1608,6 +1901,149 @@ button {
   to {
     opacity: 1;
   }
+}
+
+/* ============ Auth (Google Sign-In) ============ */
+
+.app-auth {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 25;
+}
+
+.auth-signin {
+  /* Google's rendered button slot — match its rounded pill on dark bg. */
+  min-height: 32px;
+}
+
+.auth-profile {
+  position: relative;
+}
+
+.auth-profile-trigger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  transition: border-color 200ms var(--ease), transform 150ms var(--ease);
+}
+
+.auth-profile-trigger:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.auth-profile-trigger img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.auth-profile-fallback {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.auth-profile-menu {
+  right: 0;
+  left: auto;
+  min-width: 220px;
+}
+
+.auth-profile-info {
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.auth-profile-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-profile-email {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ Book ownership ============ */
+
+.book-mine-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 7px;
+  background: var(--accent);
+  color: #0a0a0f;
+  border-radius: 100px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.book-card-mine .book-cover {
+  border-color: var(--accent);
+}
+
+.cta-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  background: transparent;
+  color: #ff8888;
+  border: 1px solid rgba(255, 122, 122, 0.5);
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms var(--ease), border-color 200ms var(--ease),
+    color 200ms var(--ease);
+}
+
+.cta-danger:hover:not(:disabled) {
+  background: rgba(255, 122, 122, 0.12);
+  border-color: #ff8888;
+  color: #ffaaaa;
+}
+
+.cta-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.detail-uploader {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.detail-uploader em {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
 /* ============ Responsive ============ */
