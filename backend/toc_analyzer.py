@@ -25,20 +25,30 @@ def _get_client() -> genai.Client:
     return _client
 
 
-PROMPT = """Below is the first ~140 characters of each page of a book, numbered.
-Identify the book's chapter or section starts and return a JSON array of
-objects: [{"title": "...", "page": 1-indexed-int}, ...]
+PROMPT = """You are extracting the table of contents from a book.
+Below is the first ~160 characters of each page, prefixed by [p.N].
 
-Strict rules:
-- Only include genuine chapter/section starts (skip running headers, page
-  numbers alone, copyright pages, repeating boilerplate).
-- `title` should be the chapter title as it appears, trimmed.
-- Sort by page ascending. Each page may appear at most once.
-- If you cannot find a clear structure, return an empty array [].
-- Maximum 40 entries.
-- Pages with little text are usually not chapter starts.
+Return a JSON array of {"title": str, "page": int} ONLY for genuine chapter
+starts. Sort ascending by page.
 
-Page snippets:
+A genuine chapter start has ALL of these:
+  - The page begins with a short, complete title — typically a phrase like
+    "Chapter 1", "1장.", "Part I", "Prologue", "에필로그", "서문",
+    or a numbered heading. Not a sentence fragment.
+  - The title is at most ~30 characters. Long phrases that look mid-sentence
+    are NOT chapter titles.
+  - It is followed by body text, not just another heading.
+
+Strictly avoid:
+  - Sentence fragments (anything that reads like the middle of a paragraph).
+  - Running headers / repeating boilerplate.
+  - Copyright pages, table of contents pages, bibliographies.
+  - Marking every page — most books have between 3 and 30 chapters total.
+
+If you cannot identify clear chapter starts, return [].
+Cap output at 40 entries.
+
+Pages:
 {pages}
 
 Return only the JSON array, no prose."""
@@ -49,7 +59,7 @@ async def analyze_toc(pages: list[str]) -> list[dict]:
         return []
     lines = []
     for i, text in enumerate(pages, start=1):
-        snippet = (text or "").replace("\n", " ").strip()[:140]
+        snippet = (text or "").replace("\n", " ").strip()[:160]
         if not snippet:
             continue
         lines.append(f"[p.{i}] {snippet}")
@@ -70,6 +80,7 @@ async def analyze_toc(pages: list[str]) -> list[dict]:
         return []
     if not isinstance(raw, list):
         return []
+
     out: list[dict] = []
     seen_pages: set[int] = set()
     for item in raw:
@@ -84,7 +95,21 @@ async def analyze_toc(pages: list[str]) -> list[dict]:
             continue
         if page in seen_pages:
             continue
+        if len(title) > 60:
+            continue  # likely a sentence, not a title
         seen_pages.add(page)
         out.append({"level": 1, "title": title, "page": page})
     out.sort(key=lambda x: x["page"])
-    return out[:40]
+    out = out[:40]
+
+    # Density check: if Gemini flagged more than ~half of all pages, it's
+    # almost certainly mistaking paragraph headings for chapters. Drop the
+    # whole list so the UI shows "no clear TOC" instead of noise.
+    if len(out) > 0 and len(out) > max(3, len(pages) // 2):
+        print(
+            f"[toc_analyzer] dropping {len(out)} entries — too dense for "
+            f"{len(pages)} pages (likely noise)"
+        )
+        return []
+
+    return out

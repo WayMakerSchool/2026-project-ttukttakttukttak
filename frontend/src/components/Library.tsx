@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { AuthUser } from "../lib/auth";
+import { authHeaders, type AuthUser } from "../lib/auth";
+import { progressHeaders } from "../lib/client-id";
 
 export interface BookSummary {
   id: string;
@@ -10,7 +11,15 @@ export interface BookSummary {
   audio_status?: "pending" | "generating" | "ready" | "failed";
   uploader_email?: string | null;
   uploader_name?: string | null;
+  last_page?: number;
+  last_read_at?: string;
+  favorited?: boolean;
+  rating_avg?: number | null;
+  review_count?: number;
+  format?: "pdf" | "epub";
 }
+
+type SortBy = "recent" | "rating" | "progress" | "title";
 
 interface Props {
   user: AuthUser | null;
@@ -41,13 +50,61 @@ export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
   const [books, setBooks] = useState<BookSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [onlyFavs, setOnlyFavs] = useState(false);
+
+  async function toggleFavorite(book: BookSummary, e: React.MouseEvent) {
+    e.stopPropagation();
+    const method = book.favorited ? "DELETE" : "POST";
+    setBooks((prev) =>
+      prev.map((b) => (b.id === book.id ? { ...b, favorited: !b.favorited } : b))
+    );
+    try {
+      await fetch(`/books/${book.id}/favorite`, {
+        method,
+        headers: { ...progressHeaders(), ...authHeaders(user) },
+      });
+    } catch {
+      // Revert on error.
+      setBooks((prev) =>
+        prev.map((b) =>
+          b.id === book.id ? { ...b, favorited: book.favorited } : b
+        )
+      );
+    }
+  }
+
+  const visible = books
+    .filter((b) => (onlyFavs ? b.favorited : true))
+    .slice()
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "rating":
+          return (b.rating_avg ?? 0) - (a.rating_avg ?? 0);
+        case "progress": {
+          const pa = (a.last_page ?? 0) / Math.max(1, a.page_count);
+          const pb = (b.last_page ?? 0) / Math.max(1, b.page_count);
+          return pb - pa;
+        }
+        case "title":
+          return a.title.localeCompare(b.title, "ko");
+        case "recent":
+        default:
+          return (
+            new Date(b.uploaded_at).getTime() -
+            new Date(a.uploaded_at).getTime()
+          );
+      }
+    });
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchOnce() {
       try {
-        const r = await fetch("/books");
+        const r = await fetch("/books", {
+          headers: { ...progressHeaders(), ...authHeaders(user) },
+        });
         if (!r.ok) throw new Error(`status ${r.status}`);
         const data = await r.json();
         if (cancelled) return (data.books ?? []) as BookSummary[];
@@ -88,7 +145,7 @@ export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
       cancelled = true;
       if (intervalId !== undefined) clearInterval(intervalId);
     };
-  }, []);
+  }, [user]);
 
   return (
     <section className="library">
@@ -139,8 +196,37 @@ export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
         )}
 
         {!loading && !error && books.length > 0 && (
-          <div className="book-grid">
-            {books.map((book) => {
+          <>
+            <div className="library-controls">
+              <div className="library-filters">
+                <button
+                  className={`chip${!onlyFavs ? " chip-active" : ""}`}
+                  type="button"
+                  onClick={() => setOnlyFavs(false)}
+                >
+                  전체 · {books.length}
+                </button>
+                <button
+                  className={`chip${onlyFavs ? " chip-active" : ""}`}
+                  type="button"
+                  onClick={() => setOnlyFavs(true)}
+                >
+                  ♥ 즐겨찾기 · {books.filter((b) => b.favorited).length}
+                </button>
+              </div>
+              <select
+                className="library-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortBy)}
+              >
+                <option value="recent">최신순</option>
+                <option value="rating">별점순</option>
+                <option value="progress">읽은 정도</option>
+                <option value="title">제목 순</option>
+              </select>
+            </div>
+            <div className="book-grid">
+              {visible.map((book) => {
               const status = book.audio_status ?? "pending";
               const cooking = status === "pending" || status === "generating";
               const mine = !!(user && book.uploader_email && user.email === book.uploader_email);
@@ -186,6 +272,15 @@ export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
                         MINE
                       </div>
                     )}
+                    <button
+                      type="button"
+                      className={`book-fav${book.favorited ? " book-fav-on" : ""}`}
+                      onClick={(e) => toggleFavorite(book, e)}
+                      aria-label={book.favorited ? "즐겨찾기 해제" : "즐겨찾기"}
+                      title={book.favorited ? "즐겨찾기 해제" : "즐겨찾기"}
+                    >
+                      {book.favorited ? "♥" : "♡"}
+                    </button>
                   </div>
                   <div className="book-info">
                     <div className="book-title">{book.title}</div>
@@ -193,11 +288,27 @@ export function Library({ user, onSelectBook, onBack, onGoUpload }: Props) {
                       {book.page_count}쪽 · {formatSize(book.size_bytes)} ·{" "}
                       {formatDate(book.uploaded_at)}
                     </div>
+                    {typeof book.last_page === "number" && book.last_page > 1 && (
+                      <div className="book-progress">
+                        <div className="book-progress-bar">
+                          <div
+                            className="book-progress-fill"
+                            style={{
+                              width: `${Math.min(100, Math.round((book.last_page / book.page_count) * 100))}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="book-progress-label">
+                          {book.last_page}쪽까지 읽음
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </section>

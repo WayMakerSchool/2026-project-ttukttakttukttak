@@ -13,6 +13,7 @@ interface Props {
   onLoadError?: (err: Error) => void;
   /** "page" = one flat PDF page at a time, "scroll" = continuous vertical scroll */
   mode: "page" | "scroll";
+  zoom?: number;
 }
 
 const MAX_WIDTH = 760;
@@ -30,15 +31,17 @@ export function FlatPdfViewer({
   onPageChange,
   onLoadError,
   mode,
+  zoom = 1,
 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const prevPageRef = useRef(page);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pageWidth, setPageWidth] = useState(getPageWidth);
+  const [baseWidth, setBaseWidth] = useState(getPageWidth);
+  const pageWidth = Math.round(baseWidth * zoom);
 
   useEffect(() => {
     function update() {
-      setPageWidth(getPageWidth());
+      setBaseWidth(getPageWidth());
     }
     window.addEventListener("resize", update);
     window.addEventListener("orientationchange", update);

@@ -23,6 +23,10 @@ interface Props {
   onPageChange: (page: number) => void;
   currentMood?: Mood;
   accentLabel: string;
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
 }
 
 export function AudioPlayer({
@@ -32,6 +36,10 @@ export function AudioPlayer({
   onPageChange,
   currentMood,
   accentLabel,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }: Props) {
   const wsRef = useRef<WebSocket | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
@@ -350,6 +358,40 @@ export function AudioPlayer({
         <div className="mood-badge" title={currentMood?.prompt ?? ""}>
           <div className="mood-dot" />
           <span className="mood-label">{accentLabel}</span>
+        </div>
+
+        <div className="dock-divider" />
+
+        <div className="dock-group zoom-group" title="확대/축소 (⌘ + / -)">
+          <button
+            className="icon-btn icon-btn-small"
+            aria-label="축소"
+            onClick={onZoomOut}
+            disabled={zoom <= 0.6 + 0.001}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="zoom-label"
+            onClick={onZoomReset}
+            title="100%로 되돌리기"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            className="icon-btn icon-btn-small"
+            aria-label="확대"
+            onClick={onZoomIn}
+            disabled={zoom >= 2 - 0.001}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
         </div>
       </div>
     </>

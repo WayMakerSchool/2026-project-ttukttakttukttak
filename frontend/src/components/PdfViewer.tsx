@@ -29,6 +29,7 @@ interface Props {
   pageCount: number;
   onPageChange: (page: number) => void;
   onLoadError?: (err: Error) => void;
+  zoom?: number;
 }
 
 function computeLayout(): { mode: FlipMode; pageWidth: number } {
@@ -47,14 +48,15 @@ function computeLayout(): { mode: FlipMode; pageWidth: number } {
   return { mode: "portrait", pageWidth: single };
 }
 
-export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError }: Props) {
+export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError, zoom = 1 }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const flipBookRef = useRef<any>(null);
   const prevPageRef = useRef(page);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [layout, setLayout] = useState(computeLayout);
-  const { mode, pageWidth } = layout;
+  const { mode } = layout;
+  const pageWidth = Math.round(layout.pageWidth * zoom);
   const pageHeight = Math.round(pageWidth * PAGE_ASPECT);
 
   // Responsive layout.
@@ -149,9 +151,10 @@ export function PdfViewer({ fileUrl, page, pageCount, onPageChange, onLoadError 
         onLoadError={onLoadError}
       >
         <HTMLFlipBook
-          // Forcing a remount on mode switch lets the library re-measure for
-          // single vs spread without weird half-states.
-          key={mode}
+          // Forcing a remount on mode or page-size change lets the library
+          // re-measure for single vs spread + zoom level without weird
+          // half-states or stale-width pages.
+          key={`${mode}-${pageWidth}`}
           ref={flipBookRef}
           width={pageWidth}
           height={pageHeight}

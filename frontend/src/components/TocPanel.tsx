@@ -16,6 +16,7 @@ interface Props {
 
 export function TocPanel({ bookId, open, currentPage, onClose, onJump }: Props) {
   const [toc, setToc] = useState<TocEntry[]>([]);
+  const [summaries, setSummaries] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,14 +25,24 @@ export function TocPanel({ bookId, open, currentPage, onClose, onJump }: Props) 
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(`/books/${bookId}/toc`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`status ${r.status}`);
+    Promise.all([
+      fetch(`/books/${bookId}/toc`).then((r) => {
+        if (!r.ok) throw new Error(`toc ${r.status}`);
         return r.json();
-      })
-      .then((data) => {
+      }),
+      fetch(`/books/${bookId}/summaries`).then((r) => (r.ok ? r.json() : { summaries: {} })),
+    ])
+      .then(([tocData, sumData]) => {
         if (cancelled) return;
-        setToc((data.toc ?? []) as TocEntry[]);
+        setToc((tocData.toc ?? []) as TocEntry[]);
+        // Backend returns int-keyed dict in JSON as string keys; normalize.
+        const raw = (sumData.summaries ?? {}) as Record<string, string>;
+        const normalized: Record<number, string> = {};
+        for (const [k, v] of Object.entries(raw)) {
+          const n = parseInt(k, 10);
+          if (!isNaN(n) && v) normalized[n] = v;
+        }
+        setSummaries(normalized);
         setLoading(false);
       })
       .catch((e) => {
@@ -116,8 +127,13 @@ export function TocPanel({ bookId, open, currentPage, onClose, onJump }: Props) 
                     }}
                     type="button"
                   >
-                    <span className="toc-item-title">{entry.title}</span>
-                    <span className="toc-item-page">{entry.page}</span>
+                    <div className="toc-item-row">
+                      <span className="toc-item-title">{entry.title}</span>
+                      <span className="toc-item-page">{entry.page}</span>
+                    </div>
+                    {summaries[entry.page] && (
+                      <span className="toc-item-summary">{summaries[entry.page]}</span>
+                    )}
                   </button>
                 </li>
               ))}

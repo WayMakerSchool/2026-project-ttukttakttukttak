@@ -11,6 +11,7 @@ export interface BookDetailData {
   description?: string | null;
   uploader_email?: string | null;
   uploader_name?: string | null;
+  format?: "pdf" | "epub";
 }
 
 export interface Review {
@@ -235,7 +236,32 @@ export function BookDetail({ bookId, user, onBack, onRead, onDeleted }: Props) {
                       {deleting ? "삭제 중…" : "삭제"}
                     </button>
                   )}
+                  <button
+                    className="cta-secondary"
+                    type="button"
+                    onClick={async () => {
+                      const url = `${location.origin}${location.pathname}#/book/${book.id}`;
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        alert("공유 링크가 복사됐어요");
+                      } catch {
+                        prompt("아래 링크를 복사하세요", url);
+                      }
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                    공유
+                  </button>
                 </div>
+                {book.format === "epub" && (
+                  <div className="detail-format-badge">EPUB · 텍스트 모드만 지원</div>
+                )}
                 {book.uploader_name && (
                   <div className="detail-uploader">
                     올린이 · <em>{book.uploader_name}</em>

@@ -7,7 +7,10 @@ import { TocPanel } from "./components/TocPanel";
 import { FlatPdfViewer } from "./components/FlatPdfViewer";
 import { TextReader } from "./components/TextReader";
 import { AuthButton } from "./components/AuthButton";
+import { TtsPlayer } from "./components/TtsPlayer";
+import { HighlightsPanel } from "./components/HighlightsPanel";
 import { authHeaders, loadUser, type AuthUser } from "./lib/auth";
+import { progressHeaders } from "./lib/client-id";
 import { moodAccent, moodToCss } from "./lib/mood-colors";
 
 type Mood = {
@@ -21,6 +24,7 @@ type Mood = {
 
 type View = "landing" | "library" | "detail" | "reader";
 type ViewMode = "book" | "page" | "scroll" | "novel" | "comfort";
+type Theme = "dark" | "sepia" | "light";
 
 const VIEW_MODES: { id: ViewMode; label: string; sub: string }[] = [
   { id: "book", label: "Book", sub: "3D 책장 넘김" },
@@ -99,9 +103,118 @@ export default function App() {
   const [uploadCover, setUploadCover] = useState<File | null>(null);
   const [uploadCoverUrl, setUploadCoverUrl] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [highlightsOpen, setHighlightsOpen] = useState(false);
+  const [highlightsKey, setHighlightsKey] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("book");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(() => loadUser());
+  const [ttsOn, setTtsOn] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = localStorage.getItem("book_store_theme") as Theme | null;
+    return stored === "sepia" || stored === "light" ? stored : "dark";
+  });
+  const [readingSeconds, setReadingSeconds] = useState(0);
+
+  // Apply theme to <html> so all CSS vars cascade correctly.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("book_store_theme", theme);
+  }, [theme]);
+
+  // Reading timer — accumulate seconds while the user is in the reader view,
+  // push to backend every 60s so partial sessions still count.
+  useEffect(() => {
+    if (view !== "reader" || !bookId) return;
+    let local = 0;
+    const tick = window.setInterval(() => {
+      // Don't accrue while the tab is hidden.
+      if (document.hidden) return;
+      local += 5;
+      setReadingSeconds((s) => s + 5);
+    }, 5000);
+    const flush = window.setInterval(() => {
+      if (local <= 0) return;
+      const seconds = local;
+      local = 0;
+      fetch("/me/sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...progressHeaders(),
+          ...authHeaders(user),
+        },
+        body: JSON.stringify({ book_id: bookId, seconds }),
+      }).catch(() => {});
+    }, 60000);
+    return () => {
+      window.clearInterval(tick);
+      window.clearInterval(flush);
+      if (local > 0) {
+        navigator.sendBeacon?.(
+          "/me/sessions",
+          new Blob(
+            [JSON.stringify({ book_id: bookId, seconds: local })],
+            { type: "application/json" }
+          )
+        );
+      }
+    };
+  }, [view, bookId, user]);
+
+  // URL hash routing — `#/book/{id}` deep-links to a detail page.
+  useEffect(() => {
+    function readHash() {
+      const h = window.location.hash;
+      const m = h.match(/^#\/book\/([a-z0-9]+)/i);
+      if (m && m[1]) {
+        setDetailBookId(m[1]);
+        setView("detail");
+      }
+    }
+    readHash();
+    window.addEventListener("hashchange", readHash);
+    return () => window.removeEventListener("hashchange", readHash);
+  }, []);
+  const [zoom, setZoom] = useState<number>(() => {
+    const raw = parseFloat(localStorage.getItem("book_store_zoom") ?? "1");
+    return isNaN(raw) ? 1 : Math.max(0.6, Math.min(2, raw));
+  });
+
+  function clampZoom(z: number): number {
+    return Math.max(0.6, Math.min(2, Math.round(z * 20) / 20));
+  }
+
+  function changeZoom(delta: number) {
+    setZoom((z) => {
+      const next = clampZoom(z + delta);
+      localStorage.setItem("book_store_zoom", String(next));
+      return next;
+    });
+  }
+
+  function resetZoom() {
+    setZoom(1);
+    localStorage.setItem("book_store_zoom", "1");
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "=" || e.key === "+") {
+        e.preventDefault();
+        changeZoom(0.1);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        changeZoom(-0.1);
+      } else if (e.key === "0") {
+        e.preventDefault();
+        resetZoom();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     if (!uploadCover) {
@@ -139,18 +252,47 @@ export default function App() {
   async function readBook(book: BookDetailData) {
     setError(null);
     try {
-      const res = await fetch(`/books/${book.id}/moods`);
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const data = await res.json();
+      const [moodsRes, progRes] = await Promise.all([
+        fetch(`/books/${book.id}/moods`),
+        fetch(`/books/${book.id}/progress`, {
+          headers: { ...progressHeaders(), ...authHeaders(user) },
+        }),
+      ]);
+      if (!moodsRes.ok) throw new Error(`status ${moodsRes.status}`);
+      const moodsData = await moodsRes.json();
+      let startPage = 1;
+      if (progRes.ok) {
+        const p = await progRes.json();
+        if (typeof p.page === "number" && p.page >= 1 && p.page <= book.page_count) {
+          startPage = p.page;
+        }
+      }
       setBookId(book.id);
       setPageCount(book.page_count);
-      setPage(1);
-      setMoods(data.moods ?? []);
+      setPage(startPage);
+      setMoods(moodsData.moods ?? []);
       setView("reader");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  // Persist reading position. Debounced so rapid page-flipping doesn't spam.
+  useEffect(() => {
+    if (view !== "reader" || !bookId) return;
+    const handle = window.setTimeout(() => {
+      fetch(`/books/${bookId}/progress`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...progressHeaders(),
+          ...authHeaders(user),
+        },
+        body: JSON.stringify({ page }),
+      }).catch(() => {});
+    }, 1500);
+    return () => window.clearTimeout(handle);
+  }, [page, bookId, view, user]);
 
   const currentMood = moods[page - 1];
   const accent = moodAccent(currentMood?.mood);
@@ -193,6 +335,31 @@ export default function App() {
   return (
     <div className="app" style={accentStyle}>
       <div className="app-auth">
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() =>
+            setTheme((t) => (t === "dark" ? "sepia" : t === "sepia" ? "light" : "dark"))
+          }
+          title={`테마: ${theme} (클릭해서 전환)`}
+          aria-label="테마 전환"
+        >
+          {theme === "dark" ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          ) : theme === "sepia" ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          )}
+        </button>
         <AuthButton user={user} onChange={setUser} />
       </div>
       {view === "landing" && (
@@ -441,6 +608,18 @@ export default function App() {
                 </svg>
                 <span>라이브러리</span>
               </button>
+              <button
+                className="reader-link"
+                onClick={() => setHighlightsOpen(true)}
+                title="하이라이트"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 11-6 6v3h3l6-6" />
+                  <path d="m12 8 6-6 4 4-6 6" />
+                </svg>
+                <span>하이라이트</span>
+              </button>
+
               <button className="reader-link" onClick={() => setTocOpen(true)} title="목차">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="8" y1="6" x2="21" y2="6" />
@@ -451,6 +630,20 @@ export default function App() {
                   <circle cx="4" cy="18" r="1" />
                 </svg>
                 <span>목차</span>
+              </button>
+
+              <button
+                className={`reader-link tts-toggle${ttsOn ? " tts-toggle-on" : ""}`}
+                onClick={() => setTtsOn((v) => !v)}
+                title={ttsOn ? "고급 낭독 끄기" : "Gemini TTS 낭독 켜기 (페이지마다 비용 발생)"}
+                aria-pressed={ttsOn}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1Z" />
+                  <path d="M15.5 8.5a4 4 0 0 1 0 7" />
+                  <path d="M19 5a8 8 0 0 1 0 14" />
+                </svg>
+                <span>{ttsOn ? "낭독 ON" : "고급 낭독"}</span>
               </button>
 
               <div className="mode-picker">
@@ -515,6 +708,7 @@ export default function App() {
                 page={page}
                 pageCount={pageCount}
                 onPageChange={setPage}
+                zoom={zoom}
                 onLoadError={(err) => {
                   console.error("PDF load failed", err);
                   resetBook();
@@ -530,6 +724,7 @@ export default function App() {
                 page={page}
                 pageCount={pageCount}
                 onPageChange={setPage}
+                zoom={zoom}
                 mode={viewMode}
                 onLoadError={(err) => {
                   console.error("PDF load failed", err);
@@ -544,7 +739,10 @@ export default function App() {
                 page={page}
                 pageCount={pageCount}
                 onPageChange={setPage}
+                zoom={zoom}
                 mode={viewMode}
+                user={user}
+                onHighlighted={() => setHighlightsKey((k) => k + 1)}
               />
             )}
           </div>
@@ -556,6 +754,10 @@ export default function App() {
             onPageChange={setPage}
             currentMood={currentMood}
             accentLabel={accent.label}
+            zoom={zoom}
+            onZoomIn={() => changeZoom(0.1)}
+            onZoomOut={() => changeZoom(-0.1)}
+            onZoomReset={resetZoom}
           />
 
           <TocPanel
@@ -563,6 +765,17 @@ export default function App() {
             open={tocOpen}
             currentPage={page}
             onClose={() => setTocOpen(false)}
+            onJump={(p) => setPage(p)}
+          />
+
+          <TtsPlayer bookId={bookId} page={page} enabled={ttsOn} />
+
+          <HighlightsPanel
+            bookId={bookId}
+            open={highlightsOpen}
+            refreshKey={highlightsKey}
+            user={user}
+            onClose={() => setHighlightsOpen(false)}
             onJump={(p) => setPage(p)}
           />
         </section>

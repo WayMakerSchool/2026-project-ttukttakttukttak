@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { authHeaders, type AuthUser } from "../lib/auth";
+import { progressHeaders } from "../lib/client-id";
 
 interface Props {
   bookId: string;
@@ -7,14 +9,106 @@ interface Props {
   onPageChange: (page: number) => void;
   /** "novel" = serif comfortable, "comfort" = larger sans + sepia */
   mode: "novel" | "comfort";
+  zoom?: number;
+  user?: AuthUser | null;
+  onHighlighted?: () => void;
 }
 
-export function TextReader({ bookId, page, pageCount, onPageChange, mode }: Props) {
+interface SelectionState {
+  text: string;
+  page: number;
+  x: number;
+  y: number;
+}
+
+export function TextReader({
+  bookId,
+  page,
+  pageCount,
+  onPageChange,
+  mode,
+  zoom = 1,
+  user = null,
+  onHighlighted,
+}: Props) {
   const [pages, setPages] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevPageRef = useRef(page);
+  const [selection, setSelection] = useState<SelectionState | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Watch for text selection inside this reader and surface a "highlight" button.
+  useEffect(() => {
+    function updateSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setSelection(null);
+        return;
+      }
+      const text = sel.toString().trim();
+      if (text.length < 2) {
+        setSelection(null);
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      const container = containerRef.current;
+      if (!container || !container.contains(range.startContainer)) {
+        setSelection(null);
+        return;
+      }
+      // Find which page section the selection lives in.
+      let node: Node | null = range.startContainer;
+      let pageNum = page;
+      while (node && node !== container) {
+        if (node instanceof HTMLElement && node.dataset.page) {
+          pageNum = parseInt(node.dataset.page, 10) || page;
+          break;
+        }
+        node = node.parentNode;
+      }
+      const rect = range.getBoundingClientRect();
+      setSelection({
+        text: text.slice(0, 2000),
+        page: pageNum,
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      });
+    }
+    document.addEventListener("selectionchange", updateSelection);
+    return () => document.removeEventListener("selectionchange", updateSelection);
+  }, [page]);
+
+  async function saveHighlight() {
+    if (!selection) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/books/${bookId}/highlights`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...progressHeaders(),
+          ...authHeaders(user),
+        },
+        body: JSON.stringify({
+          page: selection.page,
+          text: selection.text,
+          note: null,
+          color: null,
+        }),
+      });
+      if (res.ok || res.status === 201) {
+        onHighlighted?.();
+        window.getSelection()?.removeAllRanges();
+        setSelection(null);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSaving(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +200,34 @@ export function TextReader({ bookId, page, pageCount, onPageChange, mode }: Prop
   }
 
   return (
-    <div className={`text-reader text-reader-${mode}`} ref={containerRef}>
+    <>
+      {selection && (
+        <button
+          type="button"
+          className="highlight-floating"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={saveHighlight}
+          disabled={saving}
+          style={{
+            position: "fixed",
+            left: `${Math.max(60, Math.min(window.innerWidth - 60, selection.x))}px`,
+            top: `${Math.max(60, selection.y - 48)}px`,
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m9 11-6 6v3h3l6-6" />
+            <path d="m12 8 6-6 4 4-6 6" />
+            <path d="m9 11 3-3" />
+            <path d="m13 15 3-3" />
+          </svg>
+          <span>{saving ? "저장 중…" : "하이라이트"}</span>
+        </button>
+      )}
+    <div
+      className={`text-reader text-reader-${mode}`}
+      ref={containerRef}
+      style={{ ["--reader-zoom" as string]: zoom }}
+    >
       {pages.map((text, i) => {
         const trimmed = (text || "").trim();
         const paragraphs = trimmed.split(/\n\n+/);
@@ -126,5 +247,6 @@ export function TextReader({ bookId, page, pageCount, onPageChange, mode }: Prop
         );
       })}
     </div>
+    </>
   );
 }

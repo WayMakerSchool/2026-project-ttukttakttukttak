@@ -21,21 +21,37 @@ import shutil
 
 from audio_cache import generate_all_segments
 from auth import extract_bearer, verify_google_token
+from chapter_summarizer import summarize_all_chapters
+from tts_generator import generate_page_tts
 from db import (
+    add_favorite,
+    add_highlight,
+    add_reading_session,
     add_review,
     book_exists,
     delete_book as db_delete_book,
+    delete_highlight as db_delete_highlight,
+    get_all_progress,
     get_book,
+    get_chapter_summaries,
+    get_favorites,
     get_moods,
+    get_progress,
+    get_reading_stats,
     get_toc,
     init_db,
     list_books,
+    list_highlights,
     list_reviews,
+    remove_favorite,
     set_audio_status,
+    set_chapter_summary,
+    set_progress,
     set_toc,
     update_description,
     upsert_book,
 )
+from epub_parser import extract_epub
 from mood_analyzer import analyze_pages
 from pdf_parser import extract_pages, extract_toc, normalize_cover_image, render_thumbnail
 from toc_analyzer import analyze_toc
@@ -85,6 +101,17 @@ def require_user(user: dict | None = Depends(current_user)) -> dict:
     return user
 
 
+def reader_identifier(
+    user: dict | None = Depends(current_user),
+    x_client_id: str | None = Header(default=None, alias="X-Client-Id"),
+) -> str:
+    """Stable per-reader key for bookmarks/highlights. Uses Google email
+    when logged in, otherwise a UUID the frontend stores in localStorage."""
+    if user and user.get("email"):
+        return f"user:{user['email']}"
+    return f"anon:{x_client_id or 'unknown'}"
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True, "books": len(list_books())}
@@ -128,6 +155,18 @@ async def _read_cover(cover: UploadFile | None) -> bytes | None:
         raise HTTPException(400, f"Could not read cover image: {exc}")
 
 
+def _detect_format(file: UploadFile, data: bytes) -> str:
+    """Return 'epub' for EPUB uploads, otherwise 'pdf'."""
+    ct = (file.content_type or "").lower()
+    fn = (file.filename or "").lower()
+    if "epub" in ct or fn.endswith(".epub"):
+        return "epub"
+    # Magic bytes: EPUB is a ZIP starting with PK\x03\x04.
+    if data[:2] == b"PK":
+        return "epub"
+    return "pdf"
+
+
 @app.post("/upload")
 async def upload_book(
     file: UploadFile,
@@ -136,19 +175,16 @@ async def upload_book(
     cover: UploadFile | None = None,
     user: dict | None = Depends(current_user),
 ) -> dict:
-    if file.content_type not in {"application/pdf", "application/octet-stream"}:
-        raise HTTPException(400, "Only PDF files are accepted")
     data = await file.read()
     if not data:
         raise HTTPException(400, "Empty file")
 
+    book_format = _detect_format(file, data)
     book_id = hashlib.sha256(data).hexdigest()[:16]
     desc = (description or "").strip() or None
     cover_png = await _read_cover(cover)
 
     if book_exists(book_id):
-        # If the uploader added a description / cover for an already-known
-        # book, persist those so the second submitter's input isn't lost.
         if desc:
             update_description(book_id, desc)
         if cover_png is not None:
@@ -157,33 +193,61 @@ async def upload_book(
         assert book is not None
         return {"book_id": book_id, "page_count": book["page_count"], "cached": True}
 
-    pages = extract_pages(data)
-    if not pages:
-        raise HTTPException(400, "PDF has no pages")
+    if book_format == "epub":
+        try:
+            epub_data = extract_epub(data)
+        except Exception as exc:
+            raise HTTPException(400, f"EPUB 파싱 실패: {exc}")
+        pages = epub_data["pages"]
+        if not pages:
+            raise HTTPException(400, "EPUB has no readable text")
+        embedded_toc = epub_data["toc"]
+        ebook_cover_bytes = epub_data.get("cover_bytes")
+        ebook_title = epub_data.get("title") or ""
+    else:
+        if file.content_type not in {
+            "application/pdf",
+            "application/octet-stream",
+            "",
+            None,
+        }:
+            raise HTTPException(
+                400, f"Unsupported content-type: {file.content_type}"
+            )
+        pages = extract_pages(data)
+        if not pages:
+            raise HTTPException(400, "PDF has no pages")
+        embedded_toc = extract_toc(data)
+        ebook_cover_bytes = None
+        ebook_title = ""
 
-    # TOC: prefer the PDF's built-in outline; if absent, run a small Gemini
-    # call in parallel with the page-mood analysis.
-    embedded_toc = extract_toc(data)
     if embedded_toc:
         moods = await analyze_pages(pages)
         toc = embedded_toc
     else:
         moods, toc = await asyncio.gather(analyze_pages(pages), analyze_toc(pages))
 
-    pdf_path = STORAGE / f"{book_id}.pdf"
-    pdf_path.write_bytes(data)
+    # Persist source bytes (.pdf or .epub).
+    src_path = STORAGE / f"{book_id}.{book_format}"
+    src_path.write_bytes(data)
 
-    # Cover: user-supplied wins, otherwise auto-render from PDF first page.
+    # Cover priority: user-uploaded > EPUB-embedded > PDF first-page render.
     thumb_path = STORAGE / f"{book_id}.thumb.png"
     if cover_png is not None:
         thumb_path.write_bytes(cover_png)
-    else:
+    elif ebook_cover_bytes:
+        try:
+            thumb_path.write_bytes(normalize_cover_image(ebook_cover_bytes))
+        except Exception as exc:
+            print(f"[main] epub cover normalize failed: {exc!r}")
+    elif book_format == "pdf":
         try:
             thumb_path.write_bytes(render_thumbnail(data))
         except Exception as exc:
             print(f"[main] thumbnail render failed: {exc!r}")
 
-    title = ((title_override or file.filename) or f"untitled-{book_id}.pdf").strip()
+    fallback_name = file.filename or f"untitled-{book_id}.{book_format}"
+    title = (title_override or ebook_title or fallback_name).strip()
     uploader_email = (user or {}).get("email")
     uploader_name = (user or {}).get("name")
     upsert_book(
@@ -195,14 +259,28 @@ async def upload_book(
         description=desc,
         uploader_email=uploader_email,
         uploader_name=uploader_name,
+        book_format=book_format,
     )
     set_toc(book_id, toc)
 
     # Kick off Lyria audio generation in the background so future plays stream
     # from the disk cache instead of reopening a Lyria session each time.
     asyncio.create_task(_generate_audio_background(book_id, moods))
+    # And chapter summaries (only meaningful if the book has a real TOC).
+    if toc:
+        asyncio.create_task(_generate_summaries_background(book_id, toc, pages))
 
     return {"book_id": book_id, "page_count": len(pages), "cached": False}
+
+
+async def _generate_summaries_background(book_id: str, toc: list[dict], pages: list[str]) -> None:
+    try:
+        summaries = await summarize_all_chapters(toc, pages)
+        for page, summary in summaries.items():
+            set_chapter_summary(book_id, page, summary)
+        print(f"[summarizer] book {book_id}: {len(summaries)} chapter summaries saved")
+    except Exception as exc:
+        print(f"[summarizer] book {book_id} failed: {exc!r}")
 
 
 async def _generate_audio_background(book_id: str, moods: list[dict]) -> None:
@@ -217,8 +295,58 @@ async def _generate_audio_background(book_id: str, moods: list[dict]) -> None:
 
 
 @app.get("/books")
-def list_all_books() -> dict:
-    return {"books": list_books()}
+def list_all_books(identifier: str = Depends(reader_identifier)) -> dict:
+    books = list_books()
+    progress_map = get_all_progress(identifier)
+    favs = get_favorites(identifier)
+    for b in books:
+        prog = progress_map.get(b["id"])
+        if prog:
+            b["last_page"] = prog["page"]
+            b["last_read_at"] = prog["updated_at"]
+        b["favorited"] = b["id"] in favs
+    return {"books": books}
+
+
+@app.post("/books/{book_id}/favorite")
+def add_favorite_endpoint(
+    book_id: str,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    add_favorite(identifier, book_id)
+    return {"favorited": True}
+
+
+@app.delete("/books/{book_id}/favorite", status_code=204)
+def remove_favorite_endpoint(
+    book_id: str,
+    identifier: str = Depends(reader_identifier),
+) -> Response:
+    remove_favorite(identifier, book_id)
+    return Response(status_code=204)
+
+
+class SessionIn(BaseModel):
+    book_id: str
+    seconds: int = Field(ge=1, le=14400)  # 0-4 hours per session
+
+
+@app.post("/me/sessions", status_code=201)
+def record_session(
+    body: SessionIn,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(body.book_id):
+        raise HTTPException(404, "Book not found")
+    add_reading_session(identifier, body.book_id, body.seconds)
+    return {"ok": True}
+
+
+@app.get("/me/stats")
+def me_stats(identifier: str = Depends(reader_identifier)) -> dict:
+    return get_reading_stats(identifier)
 
 
 @app.get("/books/{book_id}")
@@ -263,18 +391,19 @@ def remove_book(book_id: str, user: dict = Depends(require_user)) -> Response:
     # Drop the SQLite rows first; even if a file delete races we won't show
     # a half-deleted book.
     db_delete_book(book_id)
-    for suffix in (".pdf", ".thumb.png"):
+    for suffix in (".pdf", ".epub", ".thumb.png"):
         p = STORAGE / f"{book_id}{suffix}"
         try:
             p.unlink(missing_ok=True)
         except Exception as exc:
             print(f"[delete] failed to remove {p}: {exc!r}")
-    audio_dir = STORAGE / "audio" / book_id
-    if audio_dir.exists():
-        try:
-            shutil.rmtree(audio_dir, ignore_errors=True)
-        except Exception as exc:
-            print(f"[delete] failed to remove audio dir {audio_dir}: {exc!r}")
+    for sub in ("audio", "tts"):
+        d = STORAGE / sub / book_id
+        if d.exists():
+            try:
+                shutil.rmtree(d, ignore_errors=True)
+            except Exception as exc:
+                print(f"[delete] failed to remove {d}: {exc!r}")
     return Response(status_code=204)
 
 
@@ -292,17 +421,153 @@ def post_review(book_id: str, body: ReviewIn) -> dict:
     return add_review(book_id, body.author, body.rating, body.text)
 
 
+class ProgressIn(BaseModel):
+    page: int = Field(ge=1, le=10000)
+
+
+@app.put("/books/{book_id}/progress")
+def put_book_progress(
+    book_id: str,
+    body: ProgressIn,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    set_progress(book_id, identifier, body.page)
+    return {"ok": True, "page": body.page}
+
+
+@app.get("/books/{book_id}/progress")
+def get_book_progress(
+    book_id: str,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    prog = get_progress(book_id, identifier)
+    if not prog:
+        return {"page": None, "updated_at": None}
+    return prog
+
+
+class HighlightIn(BaseModel):
+    page: int = Field(ge=1)
+    text: str = Field(min_length=1, max_length=2000)
+    note: str | None = Field(default=None, max_length=1000)
+    color: str | None = Field(default=None, max_length=20)
+
+
+@app.post("/books/{book_id}/highlights", status_code=201)
+def post_highlight(
+    book_id: str,
+    body: HighlightIn,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    return add_highlight(book_id, identifier, body.page, body.text, body.note, body.color)
+
+
+@app.get("/books/{book_id}/highlights")
+def get_highlights(
+    book_id: str,
+    identifier: str = Depends(reader_identifier),
+) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    return {"highlights": list_highlights(book_id, identifier)}
+
+
+@app.delete("/books/{book_id}/highlights/{highlight_id}", status_code=204)
+def remove_highlight(
+    book_id: str,
+    highlight_id: int,
+    identifier: str = Depends(reader_identifier),
+) -> Response:
+    ok = db_delete_highlight(highlight_id, identifier)
+    if not ok:
+        raise HTTPException(404, "Highlight not found or not yours")
+    return Response(status_code=204)
+
+
+@app.get("/books/{book_id}/summaries")
+def get_summaries(book_id: str) -> dict:
+    if not book_exists(book_id):
+        raise HTTPException(404, "Book not found")
+    return {"summaries": get_chapter_summaries(book_id)}
+
+
 @app.get("/books/{book_id}/text")
 def get_book_text(book_id: str) -> dict:
     """Return the full text of the book, page by page. Used by the
     novel / comfort reading modes that reflow the content."""
+    book = get_book(book_id)
+    if not book:
+        raise HTTPException(404, "Book not found")
+    fmt = book.get("format") or "pdf"
+    src = STORAGE / f"{book_id}.{fmt}"
+    if not src.exists():
+        raise HTTPException(404, f"{fmt.upper()} file not found on disk")
+    if fmt == "epub":
+        epub_data = extract_epub(src.read_bytes())
+        return {"pages": epub_data["pages"]}
+    return {"pages": extract_pages(src.read_bytes())}
+
+
+@app.get("/books/{book_id}/pages/{page}/tts")
+async def get_page_tts(book_id: str, page: int) -> Response:
+    """Stream Gemini TTS audio for a single page. Cached to disk so each
+    page is generated at most once per book regardless of how many users
+    re-listen to it later."""
     if not book_exists(book_id):
         raise HTTPException(404, "Book not found")
-    pdf_path = STORAGE / f"{book_id}.pdf"
-    if not pdf_path.exists():
-        raise HTTPException(404, "PDF not found on disk")
-    pages = extract_pages(pdf_path.read_bytes())
-    return {"pages": pages}
+    if page < 1:
+        raise HTTPException(400, "Page must be >= 1")
+
+    cache_dir = STORAGE / "tts" / book_id
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / f"p{page}.wav"
+
+    if cache_path.exists() and cache_path.stat().st_size > 44:
+        return Response(
+            content=cache_path.read_bytes(),
+            media_type="audio/wav",
+            headers={"Cache-Control": "private, max-age=86400"},
+        )
+
+    book = get_book(book_id)
+    fmt = (book or {}).get("format") or "pdf"
+    src = STORAGE / f"{book_id}.{fmt}"
+    if not src.exists():
+        raise HTTPException(404, f"{fmt.upper()} not found on disk")
+    if fmt == "epub":
+        pages = extract_epub(src.read_bytes())["pages"]
+    else:
+        pages = extract_pages(src.read_bytes())
+    if page > len(pages):
+        raise HTTPException(400, f"Page {page} out of range (book has {len(pages)})")
+
+    text = (pages[page - 1] or "").strip()
+    if not text:
+        # Empty page — return a tiny silent WAV so the client doesn't error.
+        from tts_generator import pcm_to_wav
+        return Response(content=pcm_to_wav(b""), media_type="audio/wav")
+
+    try:
+        wav = await generate_page_tts(text)
+    except Exception as exc:
+        print(f"[tts] generation failed for {book_id} p{page}: {exc!r}")
+        raise HTTPException(503, f"TTS generation failed: {exc}")
+
+    if not wav:
+        raise HTTPException(503, "Gemini returned empty audio")
+
+    cache_path.write_bytes(wav)
+    return Response(
+        content=wav,
+        media_type="audio/wav",
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
 
 
 @app.get("/books/{book_id}/moods")
@@ -337,6 +602,11 @@ async def get_book_toc(book_id: str) -> dict:
 
 @app.get("/books/{book_id}/pdf")
 def get_pdf(book_id: str) -> Response:
+    book = get_book(book_id)
+    if not book:
+        raise HTTPException(404, "Book not found")
+    if (book.get("format") or "pdf") != "pdf":
+        raise HTTPException(400, "This book is an EPUB. Use the text reader modes.")
     pdf_path = STORAGE / f"{book_id}.pdf"
     if not pdf_path.exists():
         raise HTTPException(404, "PDF not found")
