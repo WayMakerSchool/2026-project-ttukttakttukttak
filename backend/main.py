@@ -1577,6 +1577,99 @@ async def _generate_camera_audio_background(
         session["audio_status"] = "ready" if session["ready_segments"] else "failed"
 
 
+async def _best_toc_for_book(
+    book_name: str,
+    author: str = "",
+    publisher: str = "",
+    translator: str = "",
+    edition: str = "",
+    isbn: str = "",
+) -> dict:
+    """Best TOC we can get for a book: race the verbatim scrapers (Aladin API +
+    Yes24) against an LLM recall and return the winner.
+
+    Shared by /camera/toc-lookup AND /camera/identify so both surfaces get the
+    same COMPLETE result. The cover-vision inline TOC is a coarse recall (e.g.
+    21 vs the printed 34 chapters), so identify upgrades through here — now that
+    audio is instant (pre-generated library) there's no reason to lock in the
+    short list. Returns {toc, matched_edition, toc_error, source, verbatim}."""
+
+    async def _do_crawl():
+        aladin_res, yes24_res = await asyncio.gather(
+            crawl_toc_aladin_api(isbn),
+            crawl_toc_for_book(book_name, author, publisher, edition, isbn=isbn),
+        )
+        aladin_text = (aladin_res or {}).get("toc_text", "")
+        yes24_text = (yes24_res or {}).get("toc_text", "")
+        if not aladin_text and not yes24_text:
+            return None
+        recon = reconcile_tocs([
+            {"name": "aladin", "label": "알라딘",
+             "chapters": _parse_scraped_toc_locally(aladin_text)},
+            {"name": "yes24", "label": "Yes24",
+             "chapters": _parse_scraped_toc_locally(yes24_text)},
+        ])
+        if recon["authority"] == "aladin":
+            win_text, win_url, win_name = (
+                aladin_text, (aladin_res or {}).get("source_url", ""), "aladin"
+            )
+        else:
+            win_text, win_url, win_name = (
+                yes24_text, (yes24_res or {}).get("source_url", ""), "yes24"
+            )
+        chs = await _format_scraped_toc(win_text, book_name, author, publisher)
+        if not chs:
+            return None
+        return (chs, win_url, win_name, recon.get("agreement", ""))
+
+    async def _do_llm():
+        return await generate_book_toc(
+            book_name, author=author, publisher=publisher,
+            translator=translator, edition=edition,
+        )
+
+    crawl_task = asyncio.create_task(_do_crawl())
+    llm_task = asyncio.create_task(_do_llm())
+    try:
+        crawl_done, _ = await asyncio.wait({crawl_task}, timeout=20.0)
+        if crawl_task in crawl_done and not crawl_task.exception():
+            crawler_result = crawl_task.result()
+            if crawler_result:
+                llm_task.cancel()
+                chapters, source_url, source_name, agreement = crawler_result
+                store_label = "알라딘 공식 API" if source_name == "aladin" else "Yes24"
+                base_note = (
+                    agreement
+                    or f"{store_label}에서 가져온 실제 목차 ({len(chapters)}장)"
+                )
+                return {
+                    "toc": chapters,
+                    "matched_edition": (
+                        f"{base_note} · {source_url}" if source_url else base_note
+                    ),
+                    "toc_error": "",
+                    "source": source_name,
+                    "verbatim": True,
+                }
+    except Exception:
+        pass
+    crawl_task.cancel()
+    try:
+        toc_result = await llm_task
+        return {
+            "toc": toc_result.get("chapters", []) or [],
+            "matched_edition": toc_result.get("matched_edition", "") or "",
+            "toc_error": "",
+            "source": "llm",
+            "verbatim": False,
+        }
+    except Exception as exc:
+        return {
+            "toc": [], "matched_edition": "", "toc_error": str(exc),
+            "source": "none", "verbatim": False,
+        }
+
+
 @app.post("/camera/identify")
 async def identify_camera_cover(
     photo: UploadFile | None = None,
@@ -1601,6 +1694,34 @@ async def identify_camera_cover(
         raise _camera_gemini_http_error(exc, "표지 인식 실패")
 
     # Single vision call returned chapters inline — no second TOC roundtrip.
+    # The vision call's inline TOC is a COARSE recall (e.g. 21 vs the printed
+    # 34). Upgrade to the real printed TOC right here so the user never locks
+    # in the short list by starting a session before a background fetch lands.
+    # Audio is instant now (pre-generated library), so the extra ~10s is fine.
+    vision_toc = cover.get("chapters", []) or []
+    matched_edition = cover.get("matched_edition", "")
+    toc_source = "vision"
+    toc_verbatim = False
+    if cover.get("title"):
+        try:
+            best = await _best_toc_for_book(
+                cover.get("title", ""), cover.get("author", ""),
+                cover.get("publisher", ""), cover.get("translator", ""),
+                cover.get("edition", ""), cover.get("isbn", ""),
+            )
+            best_toc = best.get("toc") or []
+            # Adopt the looked-up TOC when it is verbatim (real printed), or
+            # simply MORE complete than the vision recall. Never downgrade.
+            if best_toc and (best.get("verbatim") or len(best_toc) > len(vision_toc)):
+                vision_toc = best_toc
+                matched_edition = best.get("matched_edition") or matched_edition
+                toc_source = best.get("source", "") or "llm"
+                toc_verbatim = bool(best.get("verbatim"))
+                print(f"[camera] identify upgraded TOC → {len(best_toc)}장 "
+                      f"({toc_source}) for {cover.get('title')!r}")
+        except Exception as exc:
+            print(f"[camera] identify TOC upgrade failed: {exc!r}")
+
     return {
         "title": cover.get("title", ""),
         "author": cover.get("author", ""),
@@ -1610,8 +1731,10 @@ async def identify_camera_cover(
         "isbn": cover.get("isbn", ""),
         "confidence": cover.get("confidence", 0.0),
         "evidence": cover.get("evidence", ""),
-        "matched_edition": cover.get("matched_edition", ""),
-        "toc": cover.get("chapters", []) or [],
+        "matched_edition": matched_edition,
+        "toc": vision_toc,
+        "toc_source": toc_source,
+        "toc_verbatim": toc_verbatim,
         "toc_error": "",
     }
 
@@ -1712,114 +1835,12 @@ async def lookup_camera_toc(
     shape as the identify endpoint."""
     if not body.book_name.strip():
         raise HTTPException(400, "책 이름을 적어주세요")
-
-    # RACE: crawler (real scraped TOC) vs LLM (knowledge-based TOC). The LLM
-    # is reliable (~28s); the crawler is potentially better but can hang on
-    # Gemini's google_search tool. We launch both concurrently and use the
-    # crawler's result IF it finishes within the LLM's budget; otherwise we
-    # ship the LLM result. Net latency: ~28s worst case (same as LLM alone),
-    # but when the crawler is fast we get the actual printed TOC.
-
-    async def _do_crawl():
-        # Two verbatim sources in parallel: Aladin's official TTB API (ISBN-exact,
-        # highest trust — dormant until ALADIN_TTB_KEY is set) and the Yes24
-        # scrape. When both hit we cross-check them and note the agreement;
-        # Aladin wins ties as the authoritative edition source.
-        aladin_res, yes24_res = await asyncio.gather(
-            crawl_toc_aladin_api(body.isbn),
-            crawl_toc_for_book(
-                body.book_name, body.author, body.publisher, body.edition,
-                isbn=body.isbn,
-            ),
-        )
-        aladin_text = (aladin_res or {}).get("toc_text", "")
-        yes24_text = (yes24_res or {}).get("toc_text", "")
-        if not aladin_text and not yes24_text:
-            return None
-
-        # Local title lists (no LLM) just for the agreement cross-check.
-        recon = reconcile_tocs([
-            {"name": "aladin", "label": "알라딘",
-             "chapters": _parse_scraped_toc_locally(aladin_text)},
-            {"name": "yes24", "label": "Yes24",
-             "chapters": _parse_scraped_toc_locally(yes24_text)},
-        ])
-        if recon["authority"] == "aladin":
-            win_text, win_url, win_name = (
-                aladin_text, (aladin_res or {}).get("source_url", ""), "aladin"
-            )
-        else:
-            win_text, win_url, win_name = (
-                yes24_text, (yes24_res or {}).get("source_url", ""), "yes24"
-            )
-        # Only the winning source's raw text goes to the (cheap) metadata pass.
-        chs = await _format_scraped_toc(
-            win_text, body.book_name, body.author, body.publisher,
-        )
-        if not chs:
-            return None
-        return (chs, win_url, win_name, recon.get("agreement", ""))
-
-    async def _do_llm():
-        return await generate_book_toc(
-            body.book_name,
-            author=body.author,
-            publisher=body.publisher,
-            translator=body.translator,
-            edition=body.edition,
-        )
-
-    crawl_task = asyncio.create_task(_do_crawl())
-    llm_task = asyncio.create_task(_do_llm())
-
-    # First wait up to 20s for the crawler — if it returns a real Yes24 hit,
-    # cancel the LLM and use it. Otherwise wait for the LLM.
-    try:
-        crawl_done, _ = await asyncio.wait({crawl_task}, timeout=20.0)
-        if crawl_task in crawl_done and not crawl_task.exception():
-            crawler_result = crawl_task.result()
-            if crawler_result:
-                llm_task.cancel()
-                chapters, source_url, source_name, agreement = crawler_result
-                store_label = "알라딘 공식 API" if source_name == "aladin" else "Yes24"
-                base_note = (
-                    agreement
-                    or f"{store_label}에서 가져온 실제 목차 ({len(chapters)}장)"
-                )
-                return {
-                    "toc": chapters,
-                    "matched_edition": (
-                        f"{base_note} · {source_url}" if source_url else base_note
-                    ),
-                    "toc_error": "",
-                    # Lets the frontend distinguish "real scraped TOC" from an
-                    # LLM guess — auto-upgrade only adopts verbatim ones.
-                    "source": source_name,
-                    "verbatim": True,
-                }
-    except Exception:
-        pass
-
-    # Crawler missed or timed out — wait for the LLM (which started 20s ago,
-    # so this typically resolves in 5-10s more).
-    crawl_task.cancel()
-    try:
-        toc_result = await llm_task
-        return {
-            "toc": toc_result.get("chapters", []) or [],
-            "matched_edition": toc_result.get("matched_edition", "") or "",
-            "toc_error": "",
-            "source": "llm",
-            "verbatim": False,
-        }
-    except Exception as exc:
-        return {
-            "toc": [],
-            "matched_edition": "",
-            "toc_error": str(exc),
-            "source": "none",
-            "verbatim": False,
-        }
+    # Same complete-TOC pipeline that /camera/identify now uses, so a manual
+    # re-fetch (after the user corrects a field) matches what identify returns.
+    return await _best_toc_for_book(
+        body.book_name, body.author, body.publisher,
+        body.translator, body.edition, body.isbn,
+    )
 
 
 async def _resolve_camera_photo(photo: UploadFile | None, source: str = "") -> bytes:

@@ -49,6 +49,10 @@ type CoverInfo = {
   toc?: Chapter[];
   matched_edition?: string;
   toc_error?: string;
+  // identify now returns the COMPLETE printed TOC (upgraded server-side),
+  // not just the coarse vision recall. `toc_verbatim` marks a real scraped one.
+  toc_source?: string;
+  toc_verbatim?: boolean;
 };
 
 // Where the currently displayed TOC came from. Strictly ordered by trust:
@@ -359,7 +363,9 @@ export function CameraReader({ onBack }: Props) {
       // TOC lookup is grounded in this specific edition.
       setBookName(result.title);
       setCover(result);
-      markTocSource("llm");
+      // identify already upgraded the TOC server-side (verbatim store TOC when
+      // one exists, else the fuller LLM recall) — mark the source accordingly.
+      markTocSource(result.toc_verbatim ? "store" : "llm");
       setEditAuthor(result.author || "");
       setEditPublisher(result.publisher || "");
       setEditTranslator(result.translator || "");
@@ -372,18 +378,9 @@ export function CameraReader({ onBack }: Props) {
       setCoverEvidence(
         `${Math.round((result.confidence ?? 0) * 100)}% — ${parts.join(", ") || "추가 정보 없음"}${result.evidence ? ` · ${result.evidence}` : ""}`,
       );
-      // Vision call gives an LLM-knowledge TOC; the bookstore page has the
-      // REAL printed one. Upgrade in the background (~2-4s) — only adopted
-      // when the crawler actually hits, so the TOC the user locks in is the
-      // verbatim published TOC whenever one exists.
-      void upgradeTocFromStore(
-        result.title,
-        result.author || "",
-        result.publisher || "",
-        result.translator || "",
-        result.edition || "",
-        result.isbn || "",
-      );
+      // No background upgrade race any more: /camera/identify already returns
+      // the COMPLETE printed TOC (upgraded server-side). The user can start a
+      // session immediately without locking in a coarse vision recall.
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
@@ -394,52 +391,6 @@ export function CameraReader({ onBack }: Props) {
   function markTocSource(s: TocSource) {
     tocSourceRef.current = s;
     setTocSource(s);
-  }
-
-  async function upgradeTocFromStore(
-    name: string,
-    author: string,
-    publisher: string,
-    translator: string,
-    edition: string,
-    isbn: string,
-  ) {
-    setRefetchingToc(true);
-    try {
-      const res = await fetch("/camera/toc-lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          book_name: name,
-          author,
-          publisher,
-          translator,
-          edition,
-          isbn,
-        }),
-      });
-      if (!res.ok) return;
-      const result = await res.json();
-      if (!result.verbatim || !result.toc?.length) return;
-      // The user may have photographed the actual TOC page while this
-      // lookup was in flight — that TOC is ground truth, never downgrade.
-      if (tocSourceRef.current === "photo") return;
-      setCover((c) =>
-        c
-          ? {
-              ...c,
-              toc: result.toc,
-              matched_edition: result.matched_edition ?? "",
-              toc_error: "",
-            }
-          : c,
-      );
-      markTocSource("store");
-    } catch {
-      /* crawler miss — keep the TOC from the vision call */
-    } finally {
-      setRefetchingToc(false);
-    }
   }
 
   // One photographed 목차 page per call; later pages APPEND in shot order.
