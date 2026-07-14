@@ -317,6 +317,40 @@ def pick_tracks_for_chapters(
     return out
 
 
+async def nearest_track_for_mood(
+    mood_text: str, exclude_id: str | None = None
+) -> dict | None:
+    """Embed a free-form page-mood description and return the single nearest
+    library track. Powers the live 'page → song' loop (no TOC / chapter).
+
+    `exclude_id` adds light hysteresis: when the best match is what's already
+    playing we keep it, but if a DIFFERENT page mood wins we can optionally
+    avoid immediately bouncing back to the same track on a near-tie."""
+    tracks = await ensure_embeddings()
+    avail = [t for t in tracks if _track_ok(t["id"])]
+    if not avail:
+        return None
+    embedded = [t for t in avail if t.get("embedding")]
+    text = (mood_text or "").strip()
+    if text and embedded:
+        vecs = await _embed_texts([text])
+        if vecs:
+            v = vecs[0]
+            best = max(embedded, key=lambda t: _cos(v, t["embedding"]))
+            # Stickiness: if a DIFFERENT track wins but the currently-playing one
+            # is almost as good (<0.02 cosine gap), stay put — kills music jitter
+            # when two consecutive pages read as nearly the same mood.
+            if exclude_id and best["id"] != exclude_id:
+                cur = next((t for t in embedded if t["id"] == exclude_id), None)
+                if cur is not None and (
+                    _cos(v, best["embedding"]) - _cos(v, cur["embedding"]) < 0.02
+                ):
+                    return cur
+            return best
+    # No embedding available → mood-word + bpm fallback.
+    return _fallback_match({"mood": text, "bpm": 90}, avail)
+
+
 async def assign_tracks(chapters: list[dict]) -> list[dict]:
     """세션 생성 시 호출: 챕터 리스트 → 트랙 리스트(같은 길이).
     임베딩은 세션당 배치 1콜(저렴), 실패해도 폴백으로 항상 결과를 냄."""

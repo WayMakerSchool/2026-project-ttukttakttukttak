@@ -38,6 +38,7 @@ from camera_book import (
     camera_segment_path,
     decide_chapter,
     detect_chapter_from_image,
+    detect_page_mood,
     generate_all_camera_segments,
     generate_book_characters,
     generate_book_toc,
@@ -1520,6 +1521,10 @@ async def _generate_camera_audio_background(
                 dst.symlink_to(src)
                 ch["track_id"] = tr["id"]
                 session["ready_segments"].append(ch["idx"])
+            # Start playing the first chapter's match immediately; the live
+            # page→mood loop takes over current_track_id on the first /detect.
+            if picks:
+                session["current_track_id"] = picks[0]["id"]
             session["audio_status"] = "ready"
             print(
                 f"[camera] {session_id} library-matched {len(picks)} chapters "
@@ -2022,12 +2027,52 @@ async def detect_camera_chapter(
     x_client_id: str | None = Header(default=None, alias="X-Client-Id"),
     _rl: None = Depends(rate_limit_ai),
 ) -> dict:
-    """Ask Gemini Vision which chapter the page in front of the camera shows
-    and update the session's active chapter. Accepts a multipart `photo` plus
-    `source=phone` for browser cameras, or `source=board` for the XIAO ESP32
-    board (no upload, backend triggers voicegared)."""
+    """Read the page in view and switch the music to the pre-generated library
+    track whose MOOD is nearest — continuous page→song matching, no chapter
+    mapping. Falls back to the old TOC chapter detection only when the library
+    isn't built. Accepts multipart `photo` + `source=phone`, or `source=board`."""
     s = _require_camera_session(session_id, user, x_client_id)
     image_bytes = await _resolve_camera_photo(photo, source)
+
+    import music_library
+
+    if music_library.library_ready():
+        try:
+            mood = await detect_page_mood(image_bytes)
+        except Exception as exc:
+            raise HTTPException(503, f"페이지 인식 실패: {exc}")
+        # Blank / non-book / unreadable page → HOLD the current track (never
+        # yank the music to silence on one bad frame).
+        if mood.get("mood_en") or mood.get("mood_ko"):
+            query = (
+                f"{mood.get('mood_ko','')} {mood.get('mood_en','')} "
+                f"tempo {mood.get('bpm', 90)} bpm"
+            ).strip()
+            track = await music_library.nearest_track_for_mood(
+                query, exclude_id=s.get("current_track_id")
+            )
+            if track:
+                s["current_track_id"] = track["id"]
+                s["last_mood"] = mood
+                s["audio_status"] = "ready"
+                print(
+                    f"[camera] {session_id} page→track: "
+                    f"{mood.get('mood_ko')} → {track['id']} "
+                    f"({mood.get('evidence','')[:40]})"
+                )
+        return {
+            "mode": "mood",
+            "mood_ko": mood.get("mood_ko", ""),
+            "mood_en": mood.get("mood_en", ""),
+            "bpm": mood.get("bpm", 90),
+            "evidence": mood.get("evidence", ""),
+            "track_id": s.get("current_track_id", ""),
+            "current_chapter_idx": s.get("current_chapter_idx", -1),
+            "audio_status": s["audio_status"],
+            "low_quality": mood.get("low_quality", False),
+        }
+
+    # ── Legacy fallback: no pre-generated library → TOC chapter detection ──
     current = s["current_chapter_idx"]
     try:
         result = await detect_chapter_from_image(
@@ -2053,6 +2098,7 @@ async def detect_camera_chapter(
     if new_idx == result["chapter_idx"] and result["chapter_idx"] >= 0:
         s["detection_locked"] = True
     return {
+        "mode": "chapter",
         **result,
         "current_chapter_idx": s["current_chapter_idx"],
         "audio_status": s["audio_status"],
@@ -2103,6 +2149,42 @@ async def camera_music_ws(ws: WebSocket, session_id: str) -> None:
     async def send_audio() -> None:
         last_waiting_idx: int | None = None
         while not stop.is_set():
+            # New mode: music follows the live page-mood match (current_track_id),
+            # not a chapter. Stream that library track on loop and switch the
+            # instant a /detect call points current_track_id at a different one.
+            track_id = s.get("current_track_id")
+            if track_id:
+                import music_library
+
+                tpath = music_library.track_path(track_id)
+                try:
+                    tdata = tpath.read_bytes() if tpath.exists() else b""
+                except FileNotFoundError:
+                    tdata = b""
+                if not tdata:
+                    await asyncio.sleep(1.0)
+                    continue
+                try:
+                    await ws.send_text(
+                        json.dumps({"type": "track", "track_id": track_id})
+                    )
+                except Exception:
+                    stop.set()
+                    return
+                offset = 0
+                while offset < len(tdata) and not stop.is_set():
+                    if s.get("current_track_id") != track_id:
+                        break  # a fresh page match switched the track
+                    chunk = tdata[offset : offset + CHUNK_BYTES]
+                    offset += len(chunk)
+                    try:
+                        await ws.send_bytes(chunk)
+                    except (WebSocketDisconnect, Exception):
+                        stop.set()
+                        return
+                    await asyncio.sleep(CHUNK_DURATION_S)
+                continue  # loop the same track, or pick up a switch
+
             idx = s["current_chapter_idx"]
             path = camera_segment_path(session_id, idx)
             try:

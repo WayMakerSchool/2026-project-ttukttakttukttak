@@ -83,6 +83,13 @@ export function CameraReader({ onBack }: Props) {
   const tocSourceRef = useRef<TocSource>("llm");
   const [tocShooting, setTocShooting] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
+  // Live page-mood match (new: music follows the page's feeling, not a chapter).
+  const [nowMood, setNowMood] = useState<{
+    mood_ko: string;
+    evidence: string;
+    bpm: number;
+    track_id: string;
+  } | null>(null);
   const [creating, setCreating] = useState(false);
   const [identifying, setIdentifying] = useState(false);
   const [coverEvidence, setCoverEvidence] = useState<string>("");
@@ -624,7 +631,7 @@ export function CameraReader({ onBack }: Props) {
             setAudioStatusLog(
               `챕터 ${msg.chapter_idx + 1} 음악 생성 중... (${msg.ready_segments?.length ?? 0} 준비됨)`,
             );
-          } else if (msg.type === "chapter") {
+          } else if (msg.type === "chapter" || msg.type === "track") {
             setAudioStatusLog("");
           }
         } catch {
@@ -673,6 +680,20 @@ export function CameraReader({ onBack }: Props) {
         throw new Error(text || `감지 실패 (${res.status})`);
       }
       const result = await res.json();
+      if (result.mode === "mood") {
+        // Page-mood match: the WS already switched to result.track_id.
+        setNowMood({
+          mood_ko: result.mood_ko ?? "",
+          evidence: result.evidence ?? "",
+          bpm: result.bpm ?? 0,
+          track_id: result.track_id ?? "",
+        });
+        setSession((s) =>
+          s ? { ...s, audio_status: result.audio_status ?? s.audio_status } : s,
+        );
+        return;
+      }
+      // Legacy chapter mode (no pre-generated library).
       setSession((s) =>
         s
           ? {
@@ -1206,24 +1227,42 @@ export function CameraReader({ onBack }: Props) {
         </div>
       )}
 
-      {current && (
+      {nowMood ? (
         <div className="cam-now">
-          <div className="cam-now-label">지금 재생 중</div>
+          <div className="cam-now-label">지금 재생 중 — 이 페이지의 분위기</div>
           <div className="cam-now-title">
-            <span className="cam-chip">CH {current.idx + 1}</span>
-            {current.title}
+            <span className="cam-chip">{nowMood.mood_ko || "무드"}</span>
+            {nowMood.bpm ? `${nowMood.bpm} BPM` : ""}
           </div>
           <div className="cam-now-meta">
-            <span>{current.mood || "—"}</span>
-            <span>{current.bpm} BPM</span>
-            {session.ready_segments.includes(current.idx) ? (
-              <span className="cam-meta-ok">✓ 음악 준비됨</span>
-            ) : (
-              <span className="cam-meta-wait">음악 생성 중…</span>
+            <span className="cam-meta-ok">✓ 페이지에 맞춘 음악 재생 중</span>
+          </div>
+          {nowMood.evidence && (
+            <p className="cam-now-summary">{nowMood.evidence}</p>
+          )}
+        </div>
+      ) : (
+        current && (
+          <div className="cam-now">
+            <div className="cam-now-label">지금 재생 중</div>
+            <div className="cam-now-title">
+              <span className="cam-chip">CH {current.idx + 1}</span>
+              {current.title}
+            </div>
+            <div className="cam-now-meta">
+              <span>{current.mood || "—"}</span>
+              <span>{current.bpm} BPM</span>
+              {session.ready_segments.includes(current.idx) ? (
+                <span className="cam-meta-ok">✓ 음악 준비됨</span>
+              ) : (
+                <span className="cam-meta-wait">음악 생성 중…</span>
+              )}
+            </div>
+            {current.summary && (
+              <p className="cam-now-summary">{current.summary}</p>
             )}
           </div>
-          {current.summary && <p className="cam-now-summary">{current.summary}</p>}
-        </div>
+        )
       )}
 
       {lastDet && (

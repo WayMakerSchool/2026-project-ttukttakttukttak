@@ -1494,6 +1494,65 @@ def decide_chapter(
     return current_idx
 
 
+MOOD_PROMPT = """You are choosing background music for someone reading a
+physical book. The camera shows the page they are on RIGHT NOW.
+
+Read whatever text/scene is visible and capture its EMOTIONAL MOOD — not the
+chapter, the FEELING of this moment in the story.
+
+Return JSON only:
+{
+  "mood_en": str,   // ONE vivid English phrase for a music model:
+                    // instruments + emotion + tempo feel, e.g.
+                    // "tense midnight chase, cold strings, fast pulse" or
+                    // "warm nostalgic reunion, soft piano, slow".
+  "mood_ko": str,   // ONE Korean mood word: 슬픔/분노/기쁨/고요/긴장/신비/
+                    //   환희/그리움/몽환/어둠 중 가장 가까운 것.
+  "bpm": int,       // 40-160 tempo feel for this page.
+  "evidence": str   // ONE short Korean sentence quoting/paraphrasing what you
+                    //   read, e.g. "주인공이 어둠 속에서 쫓기는 장면".
+}
+
+If the image is blank, too blurry, or NOT a book page (a hand, a wall, a phone
+screen), return mood_en="" and say so in evidence. No prose, only JSON."""
+
+
+async def detect_page_mood(image_bytes: bytes) -> dict:
+    """ONE cheap vision call: the emotional mood of the page in view, for the
+    live 'page → nearest song' loop. No TOC, no chapter matching — the page's
+    own feeling drives the music. Returns {mood_en, mood_ko, bpm, evidence}."""
+    clean_bytes, sharpness, enhanced = _enhance_for_vision(image_bytes)
+    low_quality = enhanced and sharpness < _BLUR_THRESHOLD
+    client = _get_client()
+    try:
+        resp = await asyncio.to_thread(
+            client.models.generate_content,
+            model="gemini-3.1-flash-lite",
+            contents=[
+                MOOD_PROMPT,
+                types.Part.from_bytes(data=clean_bytes, mime_type="image/jpeg"),
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            ),
+        )
+        raw = json.loads(resp.text or "{}")
+    except Exception as exc:
+        raise RuntimeError(f"Vision 호출 실패: {exc}")
+    try:
+        bpm = max(40, min(160, int(raw.get("bpm", 90))))
+    except (ValueError, TypeError):
+        bpm = 90
+    return {
+        "mood_en": str(raw.get("mood_en", "")).strip()[:200],
+        "mood_ko": str(raw.get("mood_ko", "")).strip()[:30],
+        "bpm": bpm,
+        "evidence": str(raw.get("evidence", "")).strip()[:300],
+        "low_quality": bool(low_quality),
+    }
+
+
 async def detect_chapter_from_image(
     book_name: str,
     toc: list[dict],

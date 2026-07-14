@@ -90,6 +90,46 @@ def test_pick_only_uses_tracks_on_disk(monkeypatch):
     assert picks[0]["id"] in only  # never picks a missing file
 
 
+def test_nearest_track_for_mood_picks_closest(monkeypatch):
+    import asyncio
+
+    tracks = [
+        {"id": "anger_00", "mood_ko": "분노", "bpm": 140, "embedding": _vec(1.0)},
+        {"id": "calm_00", "mood_ko": "고요", "bpm": 60, "embedding": _vec(0.0, 1.0)},
+    ]
+    monkeypatch.setattr(m, "load_library", lambda: tracks)
+    monkeypatch.setattr(m, "save_library", lambda t: None)
+    _fake_ok(monkeypatch)
+
+    async def fake_embed(texts):  # query vector leans toward the calm axis
+        return [_vec(0.05, 1.0)]
+
+    monkeypatch.setattr(m, "_embed_texts", fake_embed)
+    t = asyncio.run(m.nearest_track_for_mood("평화로운 정원 고요"))
+    assert t["id"] == "calm_00"
+
+
+def test_nearest_track_for_mood_hysteresis_keeps_current(monkeypatch):
+    import asyncio
+
+    # Two near-identical tracks; a near-tie must NOT bounce off the current one.
+    tracks = [
+        {"id": "calm_00", "mood_ko": "고요", "bpm": 60, "embedding": _vec(1.0, 0.0)},
+        {"id": "calm_01", "mood_ko": "고요", "bpm": 62, "embedding": _vec(0.999, 0.01)},
+    ]
+    monkeypatch.setattr(m, "load_library", lambda: tracks)
+    monkeypatch.setattr(m, "save_library", lambda t: None)
+    _fake_ok(monkeypatch)
+
+    async def fake_embed(texts):
+        return [_vec(1.0, 0.0)]
+
+    monkeypatch.setattr(m, "_embed_texts", fake_embed)
+    # calm_01 is currently playing; calm_00 is only marginally better → hold.
+    t = asyncio.run(m.nearest_track_for_mood("고요", exclude_id="calm_01"))
+    assert t["id"] == "calm_01"
+
+
 def test_pick_raises_when_library_empty(monkeypatch):
     _fake_ok(monkeypatch, ids=set())
     try:
