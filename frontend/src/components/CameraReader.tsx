@@ -84,7 +84,10 @@ export function CameraReader({ onBack }: Props) {
   const [coverEvidence, setCoverEvidence] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(false);
-  const [auto, setAuto] = useState(false);
+  // 자동 인식 기본 ON — 이 앱의 핵심 동작이 "종이책을 계속 인식해서 챕터
+  // 음악을 자동으로 바꾸는 것"인데, 기본 OFF면 세션이 영원히 1장에 머물러
+  // "왜 안 바뀌지?"가 된다. 세션이 생기면 즉시 1회 인식 + 10초 주기.
+  const [auto, setAuto] = useState(true);
   const [musicOn, setMusicOn] = useState(false);
   const [audioStatusLog, setAudioStatusLog] = useState<string>("");
   const [volume, setVolume] = useState(0.8);
