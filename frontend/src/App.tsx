@@ -4,13 +4,24 @@ import { AudioPlayer } from "./components/AudioPlayer";
 import { Library, type BookSummary } from "./components/Library";
 import { BookDetail, type BookDetailData } from "./components/BookDetail";
 import { TocPanel } from "./components/TocPanel";
+import { ChapterImageModal } from "./components/ChapterImageModal";
+import { UploadWizard } from "./components/UploadWizard";
 import { FlatPdfViewer } from "./components/FlatPdfViewer";
 import { TextReader } from "./components/TextReader";
 import { AuthButton } from "./components/AuthButton";
 import { TtsPlayer } from "./components/TtsPlayer";
 import { HighlightsPanel } from "./components/HighlightsPanel";
+import { AskPanel } from "./components/AskPanel";
+import { ResumeRecap } from "./components/ResumeRecap";
+import { SearchPanel } from "./components/SearchPanel";
+import { Pomodoro } from "./components/Pomodoro";
+import { CharactersPanel } from "./components/CharactersPanel";
+import { VolumePanel } from "./components/VolumePanel";
+import { MobileMenu } from "./components/MobileMenu";
+import { CameraReader } from "./components/CameraReader";
+import { Legal } from "./components/Legal";
 import { authHeaders, loadUser, type AuthUser } from "./lib/auth";
-import { progressHeaders } from "./lib/client-id";
+import { authQuery, progressHeaders } from "./lib/client-id";
 import { moodAccent, moodToCss } from "./lib/mood-colors";
 
 type Mood = {
@@ -22,7 +33,7 @@ type Mood = {
   prompt?: string;
 };
 
-type View = "landing" | "library" | "detail" | "reader";
+type View = "landing" | "library" | "detail" | "reader" | "camera" | "legal";
 type ViewMode = "book" | "page" | "scroll" | "novel" | "comfort";
 type Theme = "dark" | "sepia" | "light";
 
@@ -89,22 +100,58 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// Click-wrap consent — checked once on first visit. Stores the acceptance
+// timestamp in localStorage; users only see the legal screen once.
+const LEGAL_ACCEPT_KEY = "book_store_legal_accepted_at";
+
 export default function App() {
+  const [legalAccepted, setLegalAccepted] = useState<boolean>(
+    () => !!localStorage.getItem(LEGAL_ACCEPT_KEY)
+  );
   const [view, setView] = useState<View>("landing");
   const [bookId, setBookId] = useState<string | null>(null);
   const [detailBookId, setDetailBookId] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [page, setPage] = useState(1);
   const [moods, setMoods] = useState<Mood[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadDescription, setUploadDescription] = useState("");
-  const [uploadCover, setUploadCover] = useState<File | null>(null);
-  const [uploadCoverUrl, setUploadCoverUrl] = useState<string | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [highlightsOpen, setHighlightsOpen] = useState(false);
   const [highlightsKey, setHighlightsKey] = useState(0);
+  const [askOpen, setAskOpen] = useState(false);
+  const [showRecap, setShowRecap] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pomoOn, setPomoOn] = useState(false);
+  const [charsOpen, setCharsOpen] = useState(false);
+  const [volumeOpen, setVolumeOpen] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [musicVolume, setMusicVolume] = useState<number>(() => {
+    const v = parseFloat(localStorage.getItem("vol_music") ?? "0.8");
+    return isNaN(v) ? 0.8 : Math.max(0, Math.min(1, v));
+  });
+  const [ttsVolume, setTtsVolume] = useState<number>(() => {
+    const v = parseFloat(localStorage.getItem("vol_tts") ?? "0.95");
+    return isNaN(v) ? 0.95 : Math.max(0, Math.min(1, v));
+  });
+  const [sfxVolume, setSfxVolume] = useState<number>(() => {
+    const v = parseFloat(localStorage.getItem("vol_sfx") ?? "0.55");
+    return isNaN(v) ? 0.55 : Math.max(0, Math.min(1, v));
+  });
+
+  function setVolume(kind: "music" | "tts" | "sfx", v: number) {
+    if (kind === "music") {
+      setMusicVolume(v);
+      localStorage.setItem("vol_music", String(v));
+    } else if (kind === "tts") {
+      setTtsVolume(v);
+      localStorage.setItem("vol_tts", String(v));
+    } else {
+      setSfxVolume(v);
+      localStorage.setItem("vol_sfx", String(v));
+    }
+  }
   const [viewMode, setViewMode] = useState<ViewMode>("book");
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(() => loadUser());
@@ -216,16 +263,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
-    if (!uploadCover) {
-      setUploadCoverUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(uploadCover);
-    setUploadCoverUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [uploadCover]);
-
   function resetBook() {
     setBookId(null);
     setPageCount(0);
@@ -271,6 +308,7 @@ export default function App() {
       setPageCount(book.page_count);
       setPage(startPage);
       setMoods(moodsData.moods ?? []);
+      setShowRecap(startPage > 1);
       setView("reader");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -297,43 +335,25 @@ export default function App() {
   const currentMood = moods[page - 1];
   const accent = moodAccent(currentMood?.mood);
   const accentStyle = moodToCss(accent) as CSSProperties;
-  const pdfUrl = bookId ? `/books/${bookId}/pdf` : null;
+  const pdfUrl = bookId ? `/books/${bookId}/pdf${authQuery(user?.idToken)}` : null;
 
-  async function onUpload(selected: File) {
-    if (!selected.type.includes("pdf") && !selected.name.toLowerCase().endsWith(".pdf")) {
-      setError("PDF 파일만 업로드할 수 있어요.");
-      return;
-    }
-    setError(null);
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", selected);
-      const desc = uploadDescription.trim();
-      if (desc) fd.append("description", desc);
-      if (uploadCover) fd.append("cover", uploadCover);
-      const res = await fetch("/upload", {
-        method: "POST",
-        body: fd,
-        headers: { ...authHeaders(user) },
-      });
-      if (!res.ok) throw new Error(`업로드 실패 (${res.status})`);
-      const data = await res.json();
-      // Land on the detail page so the user can see their description,
-      // wait for the music cache to finish, then click "읽기 시작".
-      setDetailBookId(data.book_id);
-      setUploadDescription("");
-      setUploadCover(null);
-      setView("detail");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setUploading(false);
-    }
+  if (!legalAccepted) {
+    return (
+      <div className="app app--legal-consent">
+        <Legal
+          requireConsent
+          onBack={() => {}}
+          onConsent={() => {
+            localStorage.setItem(LEGAL_ACCEPT_KEY, new Date().toISOString());
+            setLegalAccepted(true);
+          }}
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="app" style={accentStyle}>
+    <div className={`app app--${view}`} style={accentStyle}>
       <div className="app-auth">
         <button
           type="button"
@@ -365,14 +385,6 @@ export default function App() {
       {view === "landing" && (
         <section className="landing">
           <div className="hero">
-            <iframe
-              className="hero-spline"
-              src="https://my.spline.design/magazineinaglasscase-Uj0riiE3tLa1iXZrAZLXyoyF/"
-              title="3D background"
-              loading="lazy"
-              aria-hidden="true"
-            />
-            <div className="hero-overlay" aria-hidden="true" />
             <div className="hero-inner">
               <img
                 className="hero-logo"
@@ -404,6 +416,13 @@ export default function App() {
                   </svg>
                   라이브러리 둘러보기
                 </button>
+                <button className="cta-secondary" onClick={() => setView("camera")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  카메라 리더
+                </button>
               </div>
             </div>
             <div className="scroll-hint" aria-hidden="true">
@@ -416,14 +435,6 @@ export default function App() {
           </div>
 
           <div id="how" className="section-how">
-            <iframe
-              className="section-spline"
-              src="https://my.spline.design/particles-ulMJUF2sknfLZ01wBuywJOX9/"
-              title="3D particles background"
-              loading="lazy"
-              aria-hidden="true"
-            />
-            <div className="section-overlay" aria-hidden="true" />
             <div className="section-how-content">
               <div className="section-eyebrow">how it works</div>
               <h2 className="section-title">
@@ -462,108 +473,33 @@ export default function App() {
               책을 <em>올려보세요.</em>
             </h2>
 
-            <div className="upload-extras">
-              <div className="cover-picker">
-                {uploadCoverUrl ? (
-                  <div className="cover-preview">
-                    <img src={uploadCoverUrl} alt="" />
-                    <button
-                      type="button"
-                      className="cover-remove"
-                      onClick={() => setUploadCover(null)}
-                      aria-label="표지 제거"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <label className="cover-picker-empty">
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      onChange={(e) => setUploadCover(e.target.files?.[0] ?? null)}
-                    />
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="9" cy="9" r="2" />
-                      <path d="m21 15-5-5L5 21" />
-                    </svg>
-                    <span>표지 이미지<br />(선택)</span>
-                  </label>
-                )}
-              </div>
-              <textarea
-                className="upload-description"
-                placeholder="(선택) 책 소개를 적어주세요 — 작가, 줄거리, 추천 포인트…"
-                value={uploadDescription}
-                onChange={(e) => setUploadDescription(e.target.value)}
-                rows={4}
-                maxLength={4000}
-              />
-            </div>
-
-            <label
-              className={`drop-zone${dragging ? " dragging" : ""}`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
+            <UploadWizard
+              user={user}
+              onUploaded={(id) => {
+                setDetailBookId(id);
+                setView("detail");
               }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                const f = e.dataTransfer.files?.[0];
-                if (f) onUpload(f);
-              }}
-            >
-              <svg
-                className="drop-zone-icon"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 19V5a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
-                <path d="M14 3v6h6" />
-                <path d="M12 13v5" />
-                <path d="M9.5 15.5 12 13l2.5 2.5" />
-              </svg>
-              <div className="drop-zone-label">
-                <strong>PDF 파일</strong>을 끌어다 놓거나 클릭해서 선택하세요
-                <span className="drop-zone-hint">
-                  업로드한 책은 라이브러리에 등록돼 다른 사람도 읽을 수 있어요
-                </span>
-              </div>
-              <input
-                type="file"
-                accept="application/pdf"
-                disabled={uploading}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onUpload(f);
-                }}
-              />
-            </label>
-
-            {uploading && (
-              <div className="uploading">
-                <div className="spinner" />
-                <span>페이지 분위기를 한 권 분량으로 분석 중…</span>
-              </div>
-            )}
-            {error && (
-              <div className="uploading">
-                <span className="error">{error}</span>
-              </div>
-            )}
+              onShowLegal={() => setView("legal")}
+            />
           </div>
 
           <footer className="landing-footer">
             <span>made with Gemini + Lyria RealTime</span>
+            <span className="landing-footer-sep">·</span>
+            <button
+              type="button"
+              className="landing-footer-link"
+              onClick={() => setView("legal")}
+            >
+              이용약관 · 개인정보처리방침
+            </button>
+            <span className="landing-footer-sep">·</span>
+            <a
+              className="landing-footer-link"
+              href="mailto:zipkyh@gmail.com?subject=%5BBOOK%20STORE%5D%20%EC%A0%80%EC%9E%91%EA%B6%8C%20%EC%B9%A8%ED%95%B4%20%EC%8B%A0%EA%B3%A0"
+            >
+              저작권 침해 신고
+            </a>
           </footer>
         </section>
       )}
@@ -575,6 +511,14 @@ export default function App() {
           onBack={() => setView("landing")}
           onGoUpload={backToLandingAndScrollUpload}
         />
+      )}
+
+      {view === "camera" && (
+        <CameraReader onBack={() => setView("landing")} />
+      )}
+
+      {view === "legal" && (
+        <Legal onBack={() => setView("landing")} />
       )}
 
       {view === "detail" && detailBookId && (
@@ -591,7 +535,7 @@ export default function App() {
       )}
 
       {view === "reader" && bookId && (
-        <section className="reader">
+        <section className={`reader${focusMode ? " reader-focus" : ""}`}>
           <header className="reader-top">
             <div className="reader-top-nav">
               <button className="reader-brand" onClick={resetBook} title="시작 페이지로">
@@ -601,6 +545,20 @@ export default function App() {
                 </svg>
                 <span>BOOK STORE</span>
               </button>
+              {/* Mobile-only hamburger — collapses the whole top-nav into a
+                  bottom sheet so a phone doesn't have to fit 10+ icons. */}
+              <button
+                className="reader-menu-mobile"
+                onClick={() => setMobileMenuOpen(true)}
+                title="메뉴"
+                aria-label="메뉴"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
               <button className="reader-link" onClick={goToLibrary} title="라이브러리">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -608,6 +566,103 @@ export default function App() {
                 </svg>
                 <span>라이브러리</span>
               </button>
+              <button
+                className="reader-link"
+                onClick={() => setCharsOpen(true)}
+                title="인물 관계도"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="9" r="3" />
+                  <circle cx="17" cy="14" r="3" />
+                  <circle cx="6" cy="16" r="2.5" />
+                  <line x1="11.5" y1="10" x2="14.5" y2="13" />
+                  <line x1="9" y1="12" x2="7" y2="14" />
+                </svg>
+                <span>인물</span>
+              </button>
+
+              <button
+                className="reader-link"
+                onClick={() => setSearchOpen(true)}
+                title="책 내 검색"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.5" y2="16.5" />
+                </svg>
+                <span>검색</span>
+              </button>
+
+              <div className="volume-wrap">
+                <button
+                  className={`reader-link${volumeOpen ? " reader-link-active" : ""}`}
+                  onClick={() => setVolumeOpen((v) => !v)}
+                  title="음량 조절"
+                  aria-expanded={volumeOpen}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+                    <path d="M15.5 8.5a4 4 0 0 1 0 7" />
+                    <path d="M19 5a8 8 0 0 1 0 14" />
+                  </svg>
+                  <span>음량</span>
+                </button>
+                <VolumePanel
+                  open={volumeOpen}
+                  music={musicVolume}
+                  tts={ttsVolume}
+                  sfx={sfxVolume}
+                  onClose={() => setVolumeOpen(false)}
+                  onChange={setVolume}
+                />
+              </div>
+
+              <button
+                className={`reader-link${pomoOn ? " reader-link-active" : ""}`}
+                onClick={() => setPomoOn((v) => !v)}
+                title={pomoOn ? "포모도로 끄기" : "포모도로 타이머"}
+                aria-pressed={pomoOn}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l2 2" />
+                  <path d="M9 2h6" />
+                </svg>
+                <span>포모도로</span>
+              </button>
+
+              <button
+                className={`reader-link${focusMode ? " reader-link-active" : ""}`}
+                onClick={() => setFocusMode((v) => !v)}
+                title={focusMode ? "집중 모드 끄기" : "집중 모드 (UI 자동 페이드)"}
+                aria-pressed={focusMode}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7z" />
+                </svg>
+                <span>{focusMode ? "집중 ON" : "집중"}</span>
+              </button>
+
+              <button
+                className="reader-link reader-link-ai"
+                onClick={() => setAskOpen(true)}
+                title="이 책에게 묻기"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3v3" />
+                  <path d="m5.6 5.6 2.1 2.1" />
+                  <path d="M3 12h3" />
+                  <path d="m5.6 18.4 2.1-2.1" />
+                  <path d="M12 18v3" />
+                  <path d="m16.3 16.3 2.1 2.1" />
+                  <path d="M18 12h3" />
+                  <path d="m16.3 7.7 2.1-2.1" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>AI에게 묻기</span>
+              </button>
+
               <button
                 className="reader-link"
                 onClick={() => setHighlightsOpen(true)}
@@ -630,6 +685,19 @@ export default function App() {
                   <circle cx="4" cy="18" r="1" />
                 </svg>
                 <span>목차</span>
+              </button>
+
+              <button
+                className="reader-link"
+                onClick={() => setImageOpen(true)}
+                title="이 장면을 AI로 그려보기"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="9" r="1.5" />
+                  <path d="m21 15-5-5L5 21" />
+                </svg>
+                <span>사진 만들기</span>
               </button>
 
               <button
@@ -709,6 +777,7 @@ export default function App() {
                 pageCount={pageCount}
                 onPageChange={setPage}
                 zoom={zoom}
+                sfxVolume={sfxVolume}
                 onLoadError={(err) => {
                   console.error("PDF load failed", err);
                   resetBook();
@@ -726,6 +795,7 @@ export default function App() {
                 onPageChange={setPage}
                 zoom={zoom}
                 mode={viewMode}
+                sfxVolume={sfxVolume}
                 onLoadError={(err) => {
                   console.error("PDF load failed", err);
                   resetBook();
@@ -758,6 +828,7 @@ export default function App() {
             onZoomIn={() => changeZoom(0.1)}
             onZoomOut={() => changeZoom(-0.1)}
             onZoomReset={resetZoom}
+            volume={musicVolume}
           />
 
           <TocPanel
@@ -768,7 +839,7 @@ export default function App() {
             onJump={(p) => setPage(p)}
           />
 
-          <TtsPlayer bookId={bookId} page={page} enabled={ttsOn} />
+          <TtsPlayer bookId={bookId} page={page} enabled={ttsOn} volume={ttsVolume} />
 
           <HighlightsPanel
             bookId={bookId}
@@ -777,6 +848,79 @@ export default function App() {
             user={user}
             onClose={() => setHighlightsOpen(false)}
             onJump={(p) => setPage(p)}
+          />
+
+          <AskPanel
+            bookId={bookId}
+            open={askOpen}
+            page={page}
+            onClose={() => setAskOpen(false)}
+          />
+
+          {showRecap && (
+            <ResumeRecap
+              bookId={bookId}
+              user={user}
+              onResume={(p) => {
+                setPage(p);
+                setShowRecap(false);
+              }}
+              onStartOver={() => {
+                setPage(1);
+                setShowRecap(false);
+              }}
+            />
+          )}
+
+          <SearchPanel
+            bookId={bookId}
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onJump={(p) => setPage(p)}
+          />
+
+          <CharactersPanel
+            bookId={bookId}
+            open={charsOpen}
+            onClose={() => setCharsOpen(false)}
+            onJump={(p) => setPage(p)}
+          />
+
+          <ChapterImageModal
+            bookId={bookId}
+            page={page}
+            open={imageOpen}
+            onClose={() => setImageOpen(false)}
+          />
+
+          {pomoOn && <Pomodoro />}
+
+          <MobileMenu
+            open={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            user={user}
+            onUserChange={setUser}
+            theme={theme}
+            setTheme={setTheme}
+            inReader
+            onOpenToc={() => setTocOpen(true)}
+            onOpenChars={() => setCharsOpen(true)}
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenAsk={() => setAskOpen(true)}
+            onOpenHighlights={() => setHighlightsOpen(true)}
+            onOpenImage={() => setImageOpen(true)}
+            onOpenVolume={() => setVolumeOpen(true)}
+            ttsOn={ttsOn}
+            onToggleTts={() => setTtsOn((v) => !v)}
+            pomoOn={pomoOn}
+            onTogglePomo={() => setPomoOn((v) => !v)}
+            focusMode={focusMode}
+            onToggleFocus={() => setFocusMode((v) => !v)}
+            viewMode={viewMode}
+            viewModes={VIEW_MODES}
+            onChangeViewMode={(id) => setViewMode(id as ViewMode)}
+            onGoLibrary={goToLibrary}
+            onGoHome={resetBook}
           />
         </section>
       )}

@@ -7,3 +7,5 @@ google-genai>=0.8.0
 certifi>=2024.7.4
 Pillow>=10.0.0
 google-auth>=2.30.0
+EbookLib>=0.18
+beautifulsoup4>=4.12.0

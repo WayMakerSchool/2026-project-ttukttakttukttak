@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>바이브키 — 발표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg0:#070a16; --bg1:#0e1733;
+    --blue:#4285F4; --violet:#A05CF0; --magenta:#EC5C8D; --cyan:#38B6FF; --amber:#fbbf24;
+    --text:#f3f6ff; --dim:#9fb0d6;
+    --glass:rgba(255,255,255,0.05); --stroke:rgba(255,255,255,0.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg0);color:var(--text);
+    overflow:hidden;
+  }
+  /* animated background */
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
+      radial-gradient(120% 90% at 50% 0%, var(--bg1) 0%, var(--bg0) 60%);}
+  .blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:.42;}
+  .b1{width:620px;height:620px;background:var(--blue);left:16%;top:18%;animation:f1 18s ease-in-out infinite}
+  .b2{width:560px;height:560px;background:var(--violet);left:70%;top:58%;animation:f2 22s ease-in-out infinite}
+  .b3{width:440px;height:440px;background:var(--magenta);left:56%;top:10%;animation:f1 26s ease-in-out infinite reverse}
+  @keyframes f1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-50px)}}
+  @keyframes f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-70px,40px)}}
+
+  /* deck */
+  .deck{position:relative;z-index:1;height:100vh;width:100vw;display:flex;transition:transform .6s cubic-bezier(.7,0,.2,1)}
+  .slide{min-width:100vw;height:100vh;padding:6vh 7vw;display:flex;flex-direction:column;justify-content:center;position:relative}
+  .eyebrow{letter-spacing:.5em;font-size:1.1rem;font-weight:700;color:var(--cyan);margin-bottom:1.2rem}
+  h1{font-size:7rem;font-weight:900;line-height:1.02;letter-spacing:-2px;
+     background:linear-gradient(110deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:3.7rem;font-weight:900;line-height:1.12;margin-bottom:2.2rem;letter-spacing:-1px}
+  .grad{background:linear-gradient(110deg,var(--blue),var(--violet),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:1.8rem;color:var(--text);font-weight:500;margin-top:1.4rem}
+  .dim{color:var(--dim)}
+  .src{position:absolute;left:7vw;bottom:4vh;font-size:1rem;color:var(--dim)}
+  .center{align-items:center;text-align:center}
+
+  /* big hook line */
+  .hook{font-size:7.5rem;font-weight:900;line-height:1.05;letter-spacing:-2px;margin-top:.6rem}
+
+  /* logo diamond */
+  .logo{width:120px;height:120px;margin-bottom:1.6rem}
+  .logo.big{width:200px;height:200px;margin-bottom:2rem}
+
+  /* fact list */
+  ul.facts{list-style:none;margin-top:1.5rem}
+  ul.facts li{font-size:1.55rem;margin:1.05rem 0;padding-left:2.2rem;position:relative;color:var(--text)}
+  ul.facts li::before{content:"▸";position:absolute;left:0;color:var(--cyan);font-weight:900}
+  ul.facts b{color:var(--cyan)}
+
+  /* product split */
+  .split{display:grid;grid-template-columns:430px 1fr;gap:4rem;align-items:center;margin-top:1rem}
+
+  /* phone mock */
+  .phoneback{position:relative;width:300px;height:600px;border-radius:48px;margin:0 auto;
+    background:linear-gradient(160deg,#1a2238,#0d1426);box-shadow:0 50px 110px -30px rgba(66,133,244,.45),inset 0 0 0 2px rgba(255,255,255,.05)}
+  .cam{position:absolute;top:24px;left:24px;width:100px;height:100px;border-radius:26px;background:rgba(255,255,255,.05);
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}
+  .cam i{border-radius:50%;background:rgba(255,255,255,.12)}
+  .btn-diamond{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%) rotate(45deg);
+    width:108px;height:108px;border-radius:26px;background:linear-gradient(135deg,var(--blue),var(--violet),var(--magenta));
+    box-shadow:0 22px 60px -10px var(--violet),inset 0 2px 8px rgba(255,255,255,.35);animation:pulse 3.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:translate(-50%,-50%) rotate(45deg) scale(1)}50%{transform:translate(-50%,-50%) rotate(45deg) scale(1.06)}}
+
+  /* flow */
+  .flow{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-top:1rem}
+  .node{background:var(--glass);border:1.5px solid rgba(160,92,240,.5);border-radius:20px;padding:1.5rem 1.6rem;text-align:center;min-width:200px;backdrop-filter:blur(10px)}
+  .node .ic{font-size:2.4rem}
+  .node .t{font-weight:700;font-size:1.45rem;margin-top:.4rem}
+  .node .s{font-size:1rem;color:var(--dim);margin-top:.3rem}
+  .arrow{font-size:2.6rem;font-weight:900;color:var(--cyan)}
+
+  /* function chips */
+  .chips{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;max-width:1150px}
+  .chip{display:flex;align-items:center;gap:.6rem;background:var(--glass);border:1.5px solid var(--stroke);
+    border-radius:999px;padding:1rem 1.6rem;font-size:1.5rem;font-weight:700;backdrop-filter:blur(10px)}
+  .chip .e{font-size:1.7rem}
+
+  /* target cards */
+  .cards{display:flex;gap:1.6rem;flex-wrap:wrap;margin-top:1.6rem}
+  .card{background:var(--glass);border:1px solid var(--stroke);border-radius:24px;
+        backdrop-filter:blur(14px);box-shadow:0 30px 80px -20px rgba(0,0,0,.6);padding:2rem 2.2rem}
+  .tcard{min-width:250px;flex:1}
+  .tcard .ic{font-size:2.6rem}
+  .tcard .t{font-size:1.55rem;font-weight:800;margin-top:.7rem}
+  .tcard .s{font-size:1.1rem;color:var(--dim);margin-top:.5rem;line-height:1.45}
+
+  /* roadmap */
+  .road{display:flex;align-items:stretch;gap:1.2rem;margin-top:1.4rem;flex-wrap:wrap}
+  .rstep{background:var(--glass);border:1px solid var(--stroke);border-radius:24px;backdrop-filter:blur(14px);
+        padding:2.2rem;flex:1;min-width:300px;display:flex;flex-direction:column;gap:.5rem}
+  .rstep .rn{font-size:1.3rem;font-weight:900}
+  .rstep .rt{font-size:2rem;font-weight:800;margin-top:.3rem}
+  .rstep .rd{font-size:1.25rem;font-weight:700;color:var(--dim)}
+  .rstep .rs{font-size:1.2rem;color:var(--dim);line-height:1.5;margin-top:.5rem}
+  .rarrow{align-self:center;font-size:2.4rem;font-weight:900;color:#5b6486}
+
+  /* team */
+  .team{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:1.8rem}
+  .member{background:var(--glass);border:1px solid var(--stroke);border-radius:22px;backdrop-filter:blur(12px);
+    padding:1.8rem 2.2rem;text-align:center;min-width:200px;flex:1}
+  .member .av{width:64px;height:64px;border-radius:50%;margin:0 auto .9rem;
+    background:linear-gradient(135deg,var(--blue),var(--violet),var(--magenta));display:flex;align-items:center;justify-content:center;
+    font-size:1.7rem;font-weight:900;color:#fff}
+  .member .mn{font-size:1.7rem;font-weight:800}
+  .member .mr{font-size:1.15rem;color:var(--dim);margin-top:.4rem}
+
+  .ctachips{display:flex;gap:1rem;justify-content:center;margin-top:2.2rem}
+  .ctachip{font-size:1.4rem;font-weight:700;color:var(--text);background:var(--glass);
+    border:1.5px solid var(--stroke);border-radius:999px;padding:.9rem 1.8rem;backdrop-filter:blur(10px)}
+
+  /* nav */
+  .nav{position:fixed;z-index:10;bottom:3vh;right:3vw;display:flex;gap:.6rem;align-items:center}
+  .nav button{background:var(--glass);border:1px solid var(--stroke);color:var(--text);
+        width:54px;height:54px;border-radius:50%;font-size:1.5rem;cursor:pointer;backdrop-filter:blur(10px)}
+  .nav button:hover{border-color:var(--cyan)}
+  .dots{position:fixed;z-index:10;bottom:3.4vh;left:50%;transform:translateX(-50%);display:flex;gap:.6rem}
+  .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer}
+  .dot.on{background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+  .pageno{position:fixed;z-index:10;top:3vh;right:3vw;font-size:1rem;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<!-- shared logo template -->
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="vk" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#4285F4"/><stop offset="0.5" stop-color="#A05CF0"/><stop offset="1" stop-color="#EC5C8D"/>
+  </linearGradient>
+</defs></svg>
+
+<div class="deck" id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide center">
+    <svg class="logo big" viewBox="0 0 200 200">
+      <path d="M 82 26 C 109 64 109 64 146 90 C 109 116 109 116 82 154 C 55 116 55 116 18 90 C 55 64 55 64 82 26 Z" fill="url(#vk)"/>
+      <path d="M 150 124 C 161 140 161 140 176 150 C 161 160 161 160 150 176 C 139 160 139 160 124 150 C 139 140 139 140 150 124 Z" fill="url(#vk)"/>
+    </svg>
+    <div class="eyebrow">◈ VIBEKEY · SMART BUTTON</div>
+    <h1>바이브키</h1>
+    <div class="sub">내 바이브대로, 스마트하게</div>
+    <div class="sub dim" style="font-size:1.4rem;margin-top:2rem">
+      케이스에 붙이는 <b style="color:var(--cyan)">버튼 하나</b>로, 자주 쓰는 기능을 바로 실행
+    </div>
+  </section>
+
+  <!-- 2 PROBLEM / HOOK -->
+  <section class="slide">
+    <div class="eyebrow">THE PROBLEM</div>
+    <h2 class="dim" style="font-size:3rem;font-weight:700;margin-bottom:.6rem">화면 켜고 · 잠금 풀고 · 앱 찾고…</h2>
+    <div class="hook"><span class="grad">그냥, 누르세요.</span></div>
+    <div class="sub" style="margin-top:2.2rem">매일 수십 번 반복하는 그 과정을, <b class="grad">버튼 한 번</b>으로 끝냅니다.</div>
+  </section>
+
+  <!-- 3 PRODUCT -->
+  <section class="slide">
+    <div class="eyebrow">THE PRODUCT</div>
+    <h2>케이스에 붙이는, <span class="grad">물리 버튼 하나</span></h2>
+    <div class="split">
+      <div class="phoneback">
+        <div class="cam"><i></i><i></i><i></i><i></i></div>
+        <div class="btn-diamond"></div>
+      </div>
+      <ul class="facts">
+        <li><b>케이스에 부착 + 단자에 꽂는 유선</b> — 충전·페어링 걱정 없음</li>
+        <li>꽂으면 <b>즉시 반응</b>하는 유선 직결 버튼</li>
+        <li>캡·케이스를 골라 끼우는 <b>‘폰꾸’ 액세서리</b>처럼 자유롭게</li>
+        <li>한 번의 손동작으로, 원하는 기능을 <b>바로</b></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 4 HOW IT WORKS -->
+  <section class="slide">
+    <div class="eyebrow">HOW IT WORKS</div>
+    <h2>앱에서, <span class="grad">무엇을 할지 고르세요</span></h2>
+    <div class="flow">
+      <div class="node"><div class="ic">👆</div><div class="t">버튼 누름</div><div class="s">케이스의 물리 버튼</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">⚙️</div><div class="t">앱에서 기능 지정</div><div class="s">전용 앱에서 선택</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">⚡</div><div class="t">즉시 실행</div><div class="s">잠금·앱 탐색 없이</div></div>
+    </div>
+    <div class="chips">
+      <div class="chip"><span class="e">📷</span>카메라</div>
+      <div class="chip"><span class="e">🎵</span>음악</div>
+      <div class="chip"><span class="e">🗺️</span>길찾기</div>
+      <div class="chip"><span class="e">🤖</span>AI 비서</div>
+      <div class="chip"><span class="e">📞</span>전화</div>
+      <div class="chip"><span class="e">💳</span>결제</div>
+    </div>
+  </section>
+
+  <!-- 5 SCALE -->
+  <section class="slide center">
+    <div class="eyebrow">ONE BUTTON · ANYTHING</div>
+    <h2 style="font-size:5rem;margin-bottom:1rem">한 번 누르면, <span class="grad">바로.</span></h2>
+    <div class="sub" style="font-size:2.2rem">수백 개의 앱·기능을, <b class="grad">버튼 하나</b>로</div>
+    <div class="chips" style="justify-content:center;margin-top:2.6rem">
+      <div class="chip"><span class="e">📷</span></div>
+      <div class="chip"><span class="e">🎵</span></div>
+      <div class="chip"><span class="e">🗺️</span></div>
+      <div class="chip"><span class="e">💬</span></div>
+      <div class="chip"><span class="e">📅</span></div>
+      <div class="chip"><span class="e">🤖</span></div>
+      <div class="chip"><span class="e">📞</span></div>
+      <div class="chip"><span class="e">💳</span></div>
+      <div class="chip"><span class="e">🔦</span></div>
+      <div class="chip"><span class="e">⏱️</span></div>
+      <div class="chip"><span class="e">🔍</span></div>
+      <div class="chip"><span class="e">＋</span></div>
+    </div>
+  </section>
+
+  <!-- 6 MARKET & TARGET -->
+  <section class="slide">
+    <div class="eyebrow">MARKET · TARGET</div>
+    <h2>빠르게 크는 <span class="grad">폰꾸 시장</span>, 우리 고객</h2>
+    <div class="cards">
+      <div class="card tcard"><div class="ic">🎨</div><div class="t">커스터마이징 애호가</div><div class="s">자기 취향대로 폰을 꾸미는 20·30대</div></div>
+      <div class="card tcard"><div class="ic">📱</div><div class="t">‘폰꾸족’</div><div class="s">액세서리로 개성을 표현하는 핵심 사용자</div></div>
+      <div class="card tcard"><div class="ic">⚡</div><div class="t">빠른 접근성 중시</div><div class="s">자주 쓰는 기능을 더 빠르게 쓰고 싶은 사람</div></div>
+      <div class="card tcard"><div class="ic">🎬</div><div class="t">크리에이터</div><div class="s">촬영·기록 등 앱 단축이 필요한 사용자</div></div>
+    </div>
+  </section>
+
+  <!-- 7 ROADMAP -->
+  <section class="slide">
+    <div class="eyebrow">ROADMAP</div>
+    <h2><span class="grad">단계별</span> 성장 전략</h2>
+    <div class="road">
+      <div class="rstep">
+        <div class="rn" style="color:var(--blue)">1단계</div>
+        <div class="rt">완성형 폰케이스</div>
+        <div class="rd">2026.06 – 10</div>
+        <div class="rs">독창적 디자인으로 브랜드 인지도 구축</div>
+      </div>
+      <div class="rarrow">→</div>
+      <div class="rstep">
+        <div class="rn" style="color:#34C77B">2단계</div>
+        <div class="rt">DIY 키트</div>
+        <div class="rd">2026.11 – 2027.03</div>
+        <div class="rs">스스로 꾸미는 참여형 생태계 확장</div>
+      </div>
+      <div class="rarrow">→</div>
+      <div class="rstep">
+        <div class="rn" style="color:var(--magenta)">3단계</div>
+        <div class="rt">온·오프라인 확장</div>
+        <div class="rd">2027.04 –</div>
+        <div class="rs">팝업스토어·원데이 클래스로 접점 확대</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 TEAM -->
+  <section class="slide">
+    <div class="eyebrow">TEAM · 창업동아리 뚝딱뚝딱</div>
+    <h2>이 버튼을, <span class="grad">우리가 만듭니다</span></h2>
+    <div class="team">
+      <div class="member"><div class="av">민</div><div class="mn">김민재</div><div class="mr">대표</div></div>
+      <div class="member"><div class="av">현</div><div class="mn">조현우</div><div class="mr">부대표 · 디자인</div></div>
+      <div class="member"><div class="av">지</div><div class="mn">김지한</div><div class="mr">소프트웨어</div></div>
+      <div class="member"><div class="av">제</div><div class="mn">김민제</div><div class="mr">하드웨어</div></div>
+      <div class="member"><div class="av">길</div><div class="mn">안길호</div><div class="mr">지도교사</div></div>
+    </div>
+  </section>
+
+  <!-- 9 OUTRO -->
+  <section class="slide center">
+    <svg class="logo big" viewBox="0 0 200 200">
+      <path d="M 82 26 C 109 64 109 64 146 90 C 109 116 109 116 82 154 C 55 116 55 116 18 90 C 55 64 55 64 82 26 Z" fill="url(#vk)"/>
+      <path d="M 150 124 C 161 140 161 140 176 150 C 161 160 161 160 150 176 C 139 160 139 160 124 150 C 139 140 139 140 150 124 Z" fill="url(#vk)"/>
+    </svg>
+    <h1 style="font-size:6rem">바이브키</h1>
+    <div class="sub" style="font-size:2.2rem">내 바이브대로, 스마트하게</div>
+    <div class="ctachips">
+      <div class="ctachip">@vibekey_official</div>
+      <div class="ctachip">#바이브키챌린지</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="pageno"><span id="cur">1</span> / <span id="total">9</span></div>
+<div class="dots" id="dots"></div>
+<div class="nav">
+  <button id="prev">‹</button>
+  <button id="next">›</button>
+</div>
+
+<script>
+/* ---------- deck navigation ---------- */
+const deck=document.getElementById('deck');
+const slides=document.querySelectorAll('.slide');
+const N=slides.length;
+document.getElementById('total').textContent=N;
+let idx=0;
+const dots=document.getElementById('dots');
+slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i?'':' on');d.onclick=()=>go(i);dots.appendChild(d);});
+function go(i,fromHash){
+  idx=Math.max(0,Math.min(N-1,i));
+  deck.style.transform=`translateX(-${idx*100}vw)`;
+  document.getElementById('cur').textContent=idx+1;
+  [...dots.children].forEach((d,j)=>d.classList.toggle('on',j===idx));
+  if(!fromHash)location.hash=idx+1;
+}
+document.getElementById('next').onclick=()=>go(idx+1);
+document.getElementById('prev').onclick=()=>go(idx-1);
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(idx+1);
+  if(e.key==='ArrowLeft'||e.key==='PageUp')go(idx-1);
+});
+/* deep-link to a slide via #n (e.g. #3) */
+function fromHash(){const n=parseInt(location.hash.slice(1),10);if(n>=1&&n<=N)go(n-1,true);}
+addEventListener('hashchange',fromHash);
+fromHash();
+</script>
+</body>
+</html>

@@ -92,39 +92,73 @@ def mood_to_segment_index(mood: dict | None, segments: list[dict]) -> int:
     return int(nearest["idx"])
 
 
-async def _capture_segment(book_id: str, segment: dict, duration_s: int = SEGMENT_DURATION_S) -> None:
-    """Open one Lyria session and capture `duration_s` seconds of PCM."""
-    path = segment_path(book_id, segment["idx"])
-    target_bytes = BYTES_PER_SECOND * duration_s
-    if path.exists() and path.stat().st_size >= target_bytes:
-        return  # already cached
+async def capture_lyria_pcm(
+    prompt: str,
+    bpm: int,
+    duration_s: int = SEGMENT_DURATION_S,
+    attempts: int = 3,
+    context_prompt: str | None = None,
+) -> bytes:
+    """Capture `duration_s` seconds of Lyria PCM, retrying flaky sessions.
 
-    async with LyriaStream() as stream:
-        await stream.set_prompt(segment["prompt"], segment["bpm"])
-        await stream.play()
+    Lyria RealTime is an experimental model — sessions drop mid-stream or
+    return near-silence often enough that a single attempt per segment
+    fails entire books. Each retry opens a fresh websocket session.
+    """
+    target_bytes = BYTES_PER_SECOND * duration_s
+    min_bytes = BYTES_PER_SECOND * 2
+    last_err = "no attempt ran"
+    for attempt in range(attempts):
+        if attempt:
+            await asyncio.sleep(2 * attempt)
         captured = bytearray()
         try:
-            async with asyncio.timeout(duration_s + 30):
-                async for chunk in stream.audio_chunks():
-                    captured.extend(chunk)
-                    if len(captured) >= target_bytes:
-                        break
-        except asyncio.TimeoutError:
-            pass
-        try:
-            await stream.stop()
-        except Exception:
-            pass
+            async with LyriaStream() as stream:
+                await stream.set_prompt(prompt, bpm, context_prompt=context_prompt)
+                await stream.play()
+                try:
+                    async with asyncio.timeout(duration_s + 30):
+                        async for chunk in stream.audio_chunks():
+                            captured.extend(chunk)
+                            if len(captured) >= target_bytes:
+                                break
+                except asyncio.TimeoutError:
+                    pass
+                try:
+                    await stream.stop()
+                except Exception:
+                    pass
+        except Exception as exc:
+            last_err = repr(exc)
+            continue
+        if len(captured) >= min_bytes:
+            # Trim to exact target so the file is always SAMPLE_RATE-aligned.
+            return bytes(captured[:target_bytes])
+        last_err = f"only {len(captured)} bytes captured"
+    raise RuntimeError(
+        f"Lyria capture failed after {attempts} attempts ({last_err}) for prompt={prompt!r}"
+    )
 
-    if len(captured) < BYTES_PER_SECOND * 2:
-        raise RuntimeError(
-            f"Lyria returned only {len(captured)} bytes for prompt={segment['prompt']!r}"
-        )
-    # Trim to exact target so the file is always SAMPLE_RATE-aligned.
-    path.write_bytes(bytes(captured[:target_bytes]))
+
+async def _capture_segment(
+    book_id: str,
+    segment: dict,
+    duration_s: int = SEGMENT_DURATION_S,
+    context_prompt: str | None = None,
+) -> None:
+    """Capture one segment to disk (cached, with retries)."""
+    path = segment_path(book_id, segment["idx"])
+    if path.exists() and path.stat().st_size >= BYTES_PER_SECOND * duration_s:
+        return  # already cached
+    data = await capture_lyria_pcm(
+        segment["prompt"], segment["bpm"], duration_s, context_prompt=context_prompt
+    )
+    path.write_bytes(data)
 
 
-async def generate_all_segments(book_id: str, moods: list[dict]) -> list[dict]:
+async def generate_all_segments(
+    book_id: str, moods: list[dict], context_prompt: str | None = None
+) -> list[dict]:
     """Generate one PCM segment per unique mood. Returns segment metadata
     augmented with `bytes` and `seconds` for what was actually captured."""
     segments = unique_mood_segments(moods)
@@ -134,14 +168,25 @@ async def generate_all_segments(book_id: str, moods: list[dict]) -> list[dict]:
 
     async def _bounded(seg: dict) -> None:
         async with sem:
-            await _capture_segment(book_id, seg)
+            await _capture_segment(book_id, seg, context_prompt=context_prompt)
             path = segment_path(book_id, seg["idx"])
             size = path.stat().st_size if path.exists() else 0
             seg["bytes"] = size
             seg["seconds"] = size / BYTES_PER_SECOND
 
-    await asyncio.gather(*(_bounded(s) for s in segments))
-    return segments
+    results = await asyncio.gather(
+        *(_bounded(s) for s in segments), return_exceptions=True
+    )
+    # Keep only segments that actually captured. Playback maps moods to the
+    # nearest surviving segment by BPM, so dropping a failed one degrades
+    # gracefully instead of failing the whole book.
+    ok = [seg for seg, res in zip(segments, results) if not isinstance(res, Exception)]
+    for seg, res in zip(segments, results):
+        if isinstance(res, Exception):
+            print(f"[audio_cache] segment {seg['idx']} failed: {res!r}")
+    if not ok:
+        raise RuntimeError("all Lyria segments failed")
+    return ok
 
 
 def segments_ready(book_id: str, segments: list[dict]) -> bool:

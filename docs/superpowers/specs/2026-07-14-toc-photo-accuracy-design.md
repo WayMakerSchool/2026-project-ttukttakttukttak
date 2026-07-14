@@ -1,0 +1,70 @@
+# 사진으로 목차 찾기 — 정확도 대폭 개선 설계
+
+날짜: 2026-07-14 · 대상: 카메라 리더 (backend/camera_book.py, backend/main.py, frontend/src/components/CameraReader.tsx)
+
+## 배경
+
+현재 흐름: 표지 사진 → `/camera/identify` (Gemini vision 1회: 표지 판독 + AI 지식 기반 목차 생성)
+→ 프론트가 백그라운드로 `/camera/toc-lookup` 호출 → Yes24 크롤 성공 시 실제 인쇄 목차로 자동 교체.
+
+남은 정확도 병목:
+1. Yes24가 못 찾는 책(구간본·외서·독립출판·그림책)은 AI 추측 목차에 머무름.
+2. 판본 특정 실패 — 표지 프롬프트가 ISBN을 읽으라고 지시하지만 응답 스키마에 `isbn`
+   필드가 없어 결과가 버려짐. ISBN만 있으면 서점에서 판본을 정확히 특정 가능.
+
+## 결정 사항
+
+### ① 목차 페이지 직접 촬영 (신규)
+
+- 새 엔드포인트 `POST /camera/toc-from-photo` (multipart: `photo`, `source`, `book_name`).
+- `extract_toc_from_photo()`: Gemini vision 1회 호출로 인쇄된 목차를 **그대로**(verbatim)
+  추출 + 챕터별 음악 메타데이터(summary/music_prompt/bpm/mood) 동시 생성.
+  - 기존 `_enhance_for_vision` 전처리 재사용 (회전 보정·선명화).
+  - 목차 페이지가 아니면 `is_toc_page: false` + 한국어 사유 반환.
+  - 소주제 나열 줄은 별도 챕터가 아니라 직전 챕터의 summary로 접음
+    (기존 `_parse_scraped_toc_locally` 규칙과 동일).
+- 다중 페이지 목차: 프론트가 페이지별 결과를 이어붙임. 정규화된 제목 기준 중복 제거,
+  idx 재부여. 서버는 무상태 유지.
+- 우선순위: **사진 목차 > 서점 크롤 목차 > AI 추측 목차.**
+  프론트 `tocSource` 상태('llm'|'store'|'photo')로 관리 — 사진으로 확정한 목차는
+  백그라운드 Yes24 자동 업그레이드가 덮어쓰지 못함.
+- 세션 생성 시 목차 고정(lock-in) 규칙은 기존 그대로 (TOC는 클라이언트가 준 것을
+  verbatim 채택, 재생성 금지).
+
+### ② 자동 업그레이드 적중률 강화
+
+- `COVER_PROMPT` 스키마에 `isbn` 추가(바코드/판권면에서 판독, 숫자만). 백엔드에서
+  10/13자리 검증 후 `/camera/identify` 응답에 포함.
+- `TocLookupIn`에 `isbn` 필드 추가. `_find_yes24_ids`는 ISBN이 있으면 **ISBN 검색을
+  1순위**로 실행 — 적중 시 다른 쿼리로 희석하지 않고 즉시 사용. ISBN으로 찾은
+  후보는 제목 하드 게이트를 우회(표기 차이로 인한 오탈락 방지)하고 최고 가점.
+- 응답에 `verbatim: bool` 추가 — 프론트 자동 업그레이드는 verbatim일 때만 교체.
+
+### 조사 결과에 따른 범위 조정 (원안 대비)
+
+원안의 "알라딘 크롤러 추가"는 **제외**:
+- 알라딘: 목차가 상품 페이지에 서버 렌더링되지 않음 (데스크톱/모바일/인쇄용 페이지
+  모두 확인, JS 전용 ajax 로드) → 헤드리스 브라우저 없이는 불가.
+- 교보문고: 비브라우저 요청 차단 (curl 0 byte 응답).
+- 대신 Yes24 ISBN 우선 검색(판본 정확도)과 ①(서점 미보유 책 커버)으로 같은 목표 달성.
+  ①이 모든 미적중 케이스의 최종 안전망.
+
+## 오류 처리
+
+- Gemini 쿼터/키 만료 매핑은 identify와 동일한 한국어 안내 재사용 (헬퍼로 공용화).
+- 사진이 목차 페이지가 아닐 때: `toc_error`에 모델이 준 사유("본문 페이지로 보여요" 등).
+- 크롤/vision 실패 시 기존 폴백 체계 유지 (LLM 목차 → 최소한의 결과 보장).
+
+## 검증 계획
+
+- 단위: `_clean_isbn` 정규화, 기존 파서 회귀 (backend/.venv pytest).
+- E2E: 로컬 uvicorn 기동 → PIL로 합성한 목차 페이지 이미지를
+  `/camera/toc-from-photo`에 POST → verbatim 추출 확인.
+  `/camera/toc-lookup`에 ISBN 포함 POST → Yes24 정확 판본 적중 확인.
+- 프론트: tsc/vite build 통과 확인.
+
+## 실행 위치
+
+`~/dev/프로젝트` (로컬). Desktop/프로젝트는 Google Drive 스트리밍 폴더라 실행 불가
+(2026-07-14 git status 2분 타임아웃 재확인). GitHub 원격에는 카메라 기능 브랜치가
+없어 Desktop 작업본을 rsync로 로컬 클론 위에 복원 후 작업.

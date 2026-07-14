@@ -1,0 +1,14 @@
+# Render Blueprint — 대시보드에서 New → Blueprint 로 이 저장소를 선택하면 자동 설정됩니다.
+services:
+  - type: web
+    name: block-rivals
+    runtime: node
+    rootDir: game
+    branch: block-rivals
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
