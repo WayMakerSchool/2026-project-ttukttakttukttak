@@ -41,6 +41,7 @@ from camera_book import (
     generate_all_camera_segments,
     generate_book_characters,
     generate_book_toc,
+    MAX_TOC_ENTRIES,
     crawl_toc_for_book,
     crawl_toc_aladin_api,
     _format_scraped_toc,
@@ -1855,7 +1856,7 @@ async def create_camera_session(
                 "bpm": bpm,
                 "mood": mood[:30],
             })
-            if len(toc) >= 50:
+            if len(toc) >= MAX_TOC_ENTRIES:
                 break
 
     # Fallback: client didn't send a TOC → generate one now.

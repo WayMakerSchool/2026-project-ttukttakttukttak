@@ -36,6 +36,13 @@ CAMERA_SERVER_URL = os.environ.get(
 CAMERA_AUDIO_ROOT = Path(__file__).parent / "storage" / "camera_audio"
 CAMERA_AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
 
+# Upper bound on TOC entries kept anywhere in the pipeline. Not a functional
+# limit — just a runaway guard. Books with 60-80+ short chapters (thrillers,
+# essay/poetry collections, 부+장 splits) are common, and the old hard 50 cap
+# silently truncated their tables of contents. Keep every layer in sync via
+# this one constant so a long TOC is never chopped mid-list.
+MAX_TOC_ENTRIES = 200
+
 _client: genai.Client | None = None
 
 
@@ -529,7 +536,8 @@ For each chapter:
 - mood: one short Korean word like "고요", "긴장", "슬픔", "환희", "신비".
 
 Skip front-matter (서문, 추천사, 옮긴이의 말) UNLESS the edition treats them
-as numbered chapters. Include prologues and epilogues. Up to 50 chapters.
+as numbered chapters. Include prologues and epilogues. List EVERY chapter in
+order — do NOT stop at any round number (books with 60+ short chapters exist).
 Minimum 3 chapters for any real book — if a book has fewer "chapters" use
 the natural sections/parts/acts.
 
@@ -597,7 +605,7 @@ async def generate_book_toc(
                 response_mime_type="application/json",
                 temperature=0.2,
                 # Big output budget so 30-chapter TOCs aren't truncated.
-                max_output_tokens=16384,
+                max_output_tokens=32768,
             ),
         )
         return json.loads(resp.text or "{}")
@@ -680,7 +688,7 @@ async def generate_book_toc(
                 "mood": mood[:30],
             }
         )
-        if len(out) >= 50:
+        if len(out) >= MAX_TOC_ENTRIES:
             break
     if not out:
         raise RuntimeError("AI 응답에서 유효한 챕터를 찾지 못했어요")
@@ -707,8 +715,9 @@ For each chapter:
 - mood: ONE Korean word like "고요", "긴장", "환희", "신비", "슬픔".
 
 Skip front-matter (서문, 추천사, 옮긴이의 말) UNLESS the edition treats them
-as numbered chapters. Include prologues and epilogues. 3-50 chapters. For a
-real published book, ALWAYS return chapters.
+as numbered chapters. Include prologues and epilogues. 3 or more chapters —
+list EVERY chapter, never stop at 50. For a real published book, ALWAYS
+return chapters.
 
 Return JSON only (no markdown, no prose):
 {
@@ -925,7 +934,7 @@ def _parse_scraped_toc_locally(toc_text: str) -> list[dict]:
                 "mood": "차분",
             }
         )
-        if len(out) >= 50:
+        if len(out) >= MAX_TOC_ENTRIES:
             break
     return out
 
@@ -954,7 +963,7 @@ async def identify_book_from_cover(image_bytes: bytes) -> dict:
                 # Give the model plenty of room — TOC for a 25-chapter book
                 # with all per-chapter fields is ~2-3K tokens. Default cap
                 # truncated longer books mid-array.
-                max_output_tokens=16384,
+                max_output_tokens=32768,
             ),
         )
         return json.loads(resp.text or "{}")
@@ -998,7 +1007,7 @@ async def identify_book_from_cover(image_bytes: bytes) -> dict:
         ch = _normalize_chapter(item, len(chapters))
         if ch:
             chapters.append(ch)
-        if len(chapters) >= 50:
+        if len(chapters) >= MAX_TOC_ENTRIES:
             break
 
     return {
@@ -1122,7 +1131,7 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
                 response_mime_type="application/json",
                 temperature=0.1,
                 # Dense TOCs (40+ entries with annotations) need headroom.
-                max_output_tokens=16384,
+                max_output_tokens=32768,
             ),
         )
         return json.loads(resp.text or "{}")
@@ -1153,7 +1162,7 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
         ch = _normalize_chapter(item, len(chapters))
         if ch:
             chapters.append(ch)
-        if len(chapters) >= 50:
+        if len(chapters) >= MAX_TOC_ENTRIES:
             break
 
     # Second look ONLY when the first read was shaky — keeps the happy path a
@@ -1194,7 +1203,7 @@ async def _verify_toc_from_photo(
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
             temperature=0.0,
-            max_output_tokens=8192,
+            max_output_tokens=16384,
         ),
     )
     raw = json.loads(resp.text or "{}")
@@ -1223,7 +1232,7 @@ async def _verify_toc_from_photo(
                     "mood": "차분",
                 }
             )
-        if len(out) >= 50:
+        if len(out) >= MAX_TOC_ENTRIES:
             break
     # Guard against a bad verify pass nuking a good draft: if it returned far
     # fewer entries than we started with, distrust it.

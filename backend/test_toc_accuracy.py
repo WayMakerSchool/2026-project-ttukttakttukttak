@@ -3,6 +3,7 @@ local parser regression, cross-source reconciliation, and title
 normalization (all pure functions, no network)."""
 
 from camera_book import (
+    MAX_TOC_ENTRIES,
     _clean_isbn,
     _norm_title,
     _parse_scraped_toc_locally,
@@ -47,6 +48,19 @@ def test_parse_scraped_toc_strips_page_numbers():
     out = _parse_scraped_toc_locally(toc)
     assert [c["title"] for c in out] == ["제1장 새로운 시작", "제2장 폭풍 전야"]
     assert [c["idx"] for c in out] == [0, 1]
+
+
+def test_parse_scraped_toc_keeps_more_than_50_entries():
+    # Regression: a 60-chapter book used to be silently truncated at 50.
+    toc = "".join(f"제{i}장 챕터 제목 {i} .... {i * 3}\n" for i in range(1, 61))
+    out = _parse_scraped_toc_locally(toc)
+    assert len(out) == 60
+    assert out[59]["title"] == "제60장 챕터 제목 60"
+    assert [c["idx"] for c in out] == list(range(60))
+
+
+def test_max_toc_entries_is_generous():
+    assert MAX_TOC_ENTRIES >= 100
 
 
 def test_parse_scraped_toc_folds_subtopics_into_summary():
