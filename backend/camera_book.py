@@ -955,7 +955,9 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
     Multi-page TOCs are handled by the client photographing page by page
     and merging — the server stays stateless."""
     client = _get_client()
-    clean_bytes, _sharpness, _ok = _enhance_for_vision(image_bytes)
+    # 2048px: a TOC page packs 20-40 small-print lines — the default 1280
+    # cap (fine for one big chapter heading) blurs them into misreads.
+    clean_bytes, _sharpness, _ok = _enhance_for_vision(image_bytes, max_dim=2048)
     hint = (
         f' The book is "{book_name.strip()}" — use that only to disambiguate'
         " hard-to-read characters, never to substitute chapters you expect."
@@ -1064,11 +1066,15 @@ def _sharpness_score(img: "Image.Image") -> float:
     return float(ImageStat.Stat(edges).stddev[0])
 
 
-def _enhance_for_vision(image_bytes: bytes) -> tuple[bytes, float, bool]:
+def _enhance_for_vision(
+    image_bytes: bytes, max_dim: int = _VISION_MAX_DIM
+) -> tuple[bytes, float, bool]:
     """Best-effort clean-up of a camera photo before sending it to vision.
 
     Returns (jpeg_bytes, sharpness_score, ok). On any failure returns the
     original bytes with ok=False so callers don't penalize an unmeasured image.
+    `max_dim` caps the long edge — chapter detection reads one big heading so
+    1280 is plenty, but a dense TOC page needs more pixels per glyph.
     """
     try:
         img = Image.open(io.BytesIO(image_bytes))
@@ -1080,8 +1086,8 @@ def _enhance_for_vision(image_bytes: bytes) -> tuple[bytes, float, bool]:
             scale = _VISION_MIN_DIM / short
             img = img.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
         longest = max(img.size)
-        if longest > _VISION_MAX_DIM:
-            scale = _VISION_MAX_DIM / longest
+        if longest > max_dim:
+            scale = max_dim / longest
             img = img.resize(
                 (round(img.size[0] * scale), round(img.size[1] * scale)), Image.LANCZOS
             )
@@ -1421,7 +1427,8 @@ async def trigger_and_fetch_photo(camera_url: str | None = None) -> bytes:
         raise RuntimeError(
             f"카메라 서버({url})에 촬영 신호를 보내지 못했어요: {exc}"
         )
-    # Board polls /trigger every ~0.7s and then uploads (~1-2s for JPEG).
-    # 3.5s gives both steps room without making the user wait forever.
-    await asyncio.sleep(3.5)
+    # Board polls /trigger every ~0.7s, flushes a stale frame (+0.15s), then
+    # uploads — UXGA/QSXGA JPEGs run 200-800KB, so give the upload real room.
+    # Too short and we'd fetch the PREVIOUS photo still sitting on the server.
+    await asyncio.sleep(4.5)
     return await asyncio.to_thread(_fetch_latest_photo_sync, url)
