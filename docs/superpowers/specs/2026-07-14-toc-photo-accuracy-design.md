@@ -77,6 +77,25 @@
 - 라이브: `/camera/toc-lookup` 총균쇠 → Yes24 실제 목차 34장 정확 반환.
   2-pass verify → 누락/오탈자 복원 확인. 프론트 tsc 통과.
 
+## v2.1 (2026-07-14) — 챕터 인식(목차 인식) 정확도
+
+읽는 중인 페이지 → 어느 챕터인지 인식하는 라이브 감지(`detect_chapter_from_image`)
+개선. 핵심 실패 모드: 모델이 헤딩을 정확히 OCR해도 30+ 항목 목차에서 **인덱스를
+잘못 계산**함.
+
+- **결정론적 매칭 레이어**: DETECT_PROMPT가 이제 읽은 근거를 구조화해 반환
+  (`heading_text`, `chapter_number`, `heading_kind`, `running_header`,
+  `page_number`, `signal`). 인덱스 선택은 파이썬 `resolve_detection`이 담당:
+  1. verbatim 헤딩 제목 → `_match_by_title_text` (정규화 완전일치 → 포함),
+  2. 장/부 번호 → `_extract_chapter_key`/`_match_by_chapter_key`
+     (제1부 vs 제1장 교차매칭 방지),
+  3. 러닝헤더 제목, 4. 없으면 모델 인덱스(본문 추론).
+- 결정론 매칭 성공 시 신뢰도를 올려 `decide_chapter`가 **먼 챕터 점프도 허용**
+  (인쇄된 헤딩은 거리와 무관하게 확정 증거). 본문 추론만일 때는 기존 인접-only
+  게이트로 지터 방지.
+- 검증: 단위 12개(경계·교차매칭·게이트) + 라이브 — 2장에 있던 상태에서 "제3장"
+  페이지 촬영 → matched_by=heading_text, idx 4로 정확 점프. 백엔드 총 49개 통과.
+
 ## 오류 처리
 
 - Gemini 쿼터/키 만료 매핑은 identify와 동일한 한국어 안내 재사용 (헬퍼로 공용화).

@@ -1233,41 +1233,52 @@ async def _verify_toc_from_photo(
 
 
 DETECT_PROMPT = """A reader is reading "{book_name}". The camera just snapped
-the page they are on. Your job is OCR-FIRST chapter detection:
+the page they are on. TRANSCRIBE what you can read — do NOT try to compute the
+TOC index yourself; the app matches your reading to the TOC. Report:
 
-PRIMARY SIGNAL — look for a CHAPTER HEADING. Book pages typically print the
-chapter title as the LARGEST text on the page, often centered, often at the
-top of a fresh page (with a chapter number like "제3장", "Chapter 5",
-"3", or just a standalone title line above a block of body text). If you see
-such a heading, that is the chapter — match it against the TOC below by
-its printed title or chapter number.
+1) CHAPTER HEADING — the LARGEST text on the page, usually centered near the
+   top of a fresh page (e.g. "제3장 사임의 신어 사전", "Chapter 5", or a bare
+   title line above body text). Copy it VERBATIM into `heading_text`. If it
+   carries a number, also put the digits in `chapter_number` and the kind in
+   `heading_kind` ("장"/"부"/"chapter"/"part"). "" / -1 if no heading.
+2) RUNNING HEADER — the small chapter/section title printed at the very top
+   margin of ordinary pages (not the body). Copy VERBATIM into `running_header`.
+3) PAGE NUMBER — the printed folio if visible, into `page_number` (else -1).
+4) BODY GIST — if there is NO heading or running header, read a sentence or two
+   and set `body_gist` to a short phrase of what is happening.
 
-SECONDARY SIGNAL — if no heading is visible (mid-chapter body text only),
-read a sentence or two of body text and pick the chapter whose summary best
-matches what's happening in those lines. Also use any RUNNING HEADER (the
-small chapter/section title often printed at the very top of each page) and
-the page number if visible.
+Then give your OWN best guess `chapter_idx` (0-based into the TOC) and a
+`signal` describing your strongest evidence: "heading" > "running_header" >
+"body" > "none".
 
-CONTINUITY — {current_hint} People read forward, one page at a time, so the
-reader is almost always on that same chapter or the next one. Do NOT jump to a
-distant chapter unless a heading or running header clearly proves it. If the
-body text could fit several chapters, prefer the one the reader is already on
-and LOWER your confidence accordingly.
+CONTINUITY — {current_hint} People read forward one page at a time, so the
+reader is almost always on that same chapter or the next. Only report a distant
+chapter when a heading or running header clearly proves it.
 
-If the image is blank, too blurred to read, or NOT a book page (a hand, a
-wall, a phone screen), return chapter_idx = -1 with low confidence.
+If the image is blank, too blurred, or NOT a book page (a hand, a wall, a
+phone screen), set signal="none", chapter_idx=-1, confidence low.
 
 Chapters in this edition:
 {toc_text}
 
 Return JSON only:
-{"chapter_idx": int, "confidence": float, "evidence": str}
+{
+  "signal": "heading"|"running_header"|"body"|"none",
+  "heading_text": str,
+  "chapter_number": int,
+  "heading_kind": str,
+  "running_header": str,
+  "page_number": int,
+  "body_gist": str,
+  "chapter_idx": int,
+  "confidence": float,
+  "evidence": str
+}
 
-- chapter_idx: 0-based TOC index of the matched chapter, or -1 if unsure.
 - confidence: 0.0–1.0. Clear heading/running-header → 0.85+. Body-text
-  inference that fits one chapter well → 0.5–0.7. Ambiguous body text → <0.4.
-- evidence: ONE short Korean sentence — quote the heading or fragment you
-  read, e.g. "표지 가운데에 '제3장 사임의 신어 사전'을 읽음".
+  inference that fits one chapter → 0.5–0.7. Ambiguous → <0.4.
+- evidence: ONE short Korean sentence quoting what you read, e.g.
+  "페이지 상단에 '제3장 사임의 신어 사전'을 읽음".
 
 No prose, only the JSON."""
 
@@ -1322,6 +1333,109 @@ def _enhance_for_vision(
     except Exception as exc:  # noqa: BLE001 - best-effort, never block detection
         print(f"[camera] image enhance failed: {exc!r}")
         return image_bytes, 0.0, False
+
+
+# ── Deterministic detection→TOC matching. The model READS the page (heading,
+# running header, chapter number); Python maps that reading to a TOC index. An
+# LLM will OCR a heading correctly yet miscount the index in a 30+ entry list,
+# so we never trust its index when we can match its READING against the TOC.
+_CHAP_KEY_RES = [
+    (re.compile(r"제?\s*(\d+)\s*장"), "장"),
+    (re.compile(r"제?\s*(\d+)\s*부"), "부"),
+    (re.compile(r"(?:chapter|chap\.?|ch\.?)\s*(\d+)", re.I), "장"),
+    (re.compile(r"\bpart\s*(\d+)", re.I), "부"),
+]
+
+
+def _extract_chapter_key(text: str) -> tuple[str, int] | None:
+    """('장'|'부', number) parsed from a heading/title, or None. Keeps parts
+    (제2부 / Part 2) distinct from chapters (제3장 / Chapter 3) so "1부" and
+    "1장" never cross-match."""
+    s = str(text or "")
+    for rx, kind in _CHAP_KEY_RES:
+        m = rx.search(s)
+        if m:
+            try:
+                return (kind, int(m.group(1)))
+            except (ValueError, TypeError):
+                return None
+    return None
+
+
+def _match_by_chapter_key(toc: list[dict], key: tuple[str, int]) -> int | None:
+    """TOC index whose title carries the same (kind, number); None if none."""
+    hits = [c["idx"] for c in toc if _extract_chapter_key(c.get("title", "")) == key]
+    return hits[0] if hits else None
+
+
+def _match_by_title_text(toc: list[dict], text: str) -> int | None:
+    """TOC index for a verbatim heading / running-header string: exact
+    normalized match first, then longest substring containment."""
+    n = _norm_title(text)
+    if len(n) < 2:
+        return None
+    for c in toc:
+        if _norm_title(c.get("title", "")) == n:
+            return c["idx"]
+    best_idx, best_len = None, 0
+    for c in toc:
+        t = _norm_title(c.get("title", ""))
+        if len(t) >= 3 and (t in n or n in t) and len(t) > best_len:
+            best_idx, best_len = c["idx"], len(t)
+    return best_idx
+
+
+def resolve_detection(raw: dict, toc: list[dict]) -> dict:
+    """Map the model's raw page reading to a trusted {idx, confidence,
+    matched_by}. A reading matched deterministically against the TOC (chapter
+    number or verbatim heading text) overrides the model's own index guess and
+    its confidence is raised so decide_chapter honors the switch to ANY
+    chapter. Pure body-text inference keeps the model's index and confidence."""
+    def _num(v: object) -> int:
+        try:
+            return int(v)  # type: ignore[arg-type]
+        except (ValueError, TypeError):
+            return -1
+
+    def _conf(v: object) -> float:
+        try:
+            return max(0.0, min(1.0, float(v)))  # type: ignore[arg-type]
+        except (ValueError, TypeError):
+            return 0.0
+
+    heading = str(raw.get("heading_text", "")).strip()
+    running = str(raw.get("running_header", "")).strip()
+    kind_hint = str(raw.get("heading_kind", "")).strip().lower()
+    num = _num(raw.get("chapter_number", -1))
+    model_idx = _num(raw.get("chapter_idx", -1))
+    model_conf = _conf(raw.get("confidence", 0.0))
+
+    # 1) Verbatim heading text — most specific.
+    if heading:
+        idx = _match_by_title_text(toc, heading)
+        if idx is not None:
+            return {"idx": idx, "confidence": max(model_conf, 0.9),
+                    "matched_by": "heading_text"}
+    # 2) Chapter / part NUMBER from the heading.
+    if num >= 0:
+        kind = "부" if kind_hint in ("부", "part") else "장"
+        idx = _match_by_chapter_key(toc, (kind, num))
+        if idx is None:  # some books print a bare number; try the other kind
+            idx = _match_by_chapter_key(toc, ("부" if kind == "장" else "장", num))
+        if idx is not None:
+            return {"idx": idx, "confidence": max(model_conf, 0.88),
+                    "matched_by": "chapter_number"}
+    # 3) Running header — printed on every page, reliable but a hair below a
+    #    fresh-page heading.
+    if running:
+        idx = _match_by_title_text(toc, running)
+        if idx is not None:
+            return {"idx": idx, "confidence": max(model_conf, 0.8),
+                    "matched_by": "running_header"}
+    # 4) Fall back to the model's own index (body-text inference).
+    if 0 <= model_idx < len(toc):
+        return {"idx": model_idx, "confidence": model_conf, "matched_by": "body"}
+    return {"idx": -1, "confidence": model_conf, "matched_by": "none"}
 
 
 # Confidence gates for accepting a chapter switch. Hysteresis: staying put is
@@ -1420,14 +1534,12 @@ async def detect_chapter_from_image(
     except Exception as exc:
         raise RuntimeError(f"Vision 호출 실패: {exc}")
 
-    try:
-        idx = int(raw.get("chapter_idx", -1))
-    except (ValueError, TypeError):
-        idx = -1
-    try:
-        conf = float(raw.get("confidence", 0.0))
-    except (ValueError, TypeError):
-        conf = 0.0
+    # Deterministic match of the model's READING (heading text / chapter
+    # number / running header) against the TOC — far more reliable than the
+    # model's own index guess for long tables of contents.
+    resolved = resolve_detection(raw, toc)
+    idx = resolved["idx"]
+    conf = resolved["confidence"]
     evidence = str(raw.get("evidence", "")).strip()[:300]
     if idx < -1 or idx >= len(toc):
         idx = -1
@@ -1435,6 +1547,7 @@ async def detect_chapter_from_image(
         "chapter_idx": idx,
         "confidence": max(0.0, min(1.0, conf)),
         "evidence": evidence,
+        "matched_by": resolved["matched_by"],
         "low_quality": bool(low_quality),
     }
 
