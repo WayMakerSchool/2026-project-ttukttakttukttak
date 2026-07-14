@@ -43,6 +43,7 @@ from camera_book import (
     generate_book_toc,
     crawl_toc_for_book,
     _format_scraped_toc,
+    extract_toc_from_photo,
     identify_book_from_cover,
     trigger_and_fetch_photo,
 )
@@ -1563,23 +1564,7 @@ async def identify_camera_cover(
     try:
         cover = await identify_book_from_cover(image_bytes)
     except Exception as exc:
-        msg = str(exc)
-        # Quota / billing errors hit users a lot during testing — surface a
-        # short, actionable Korean line instead of the raw Gemini stack.
-        if "RESOURCE_EXHAUSTED" in msg or "429" in msg or "prepayment" in msg.lower():
-            raise HTTPException(
-                503,
-                "Gemini API 크레딧이 부족해요. "
-                "https://ai.studio/projects 에서 결제 정보를 확인해주세요.",
-            )
-        if "API_KEY_INVALID" in msg or "API key expired" in msg or "key not valid" in msg.lower():
-            raise HTTPException(
-                503,
-                "Gemini API 키가 만료됐어요. "
-                "https://aistudio.google.com/apikey 에서 새 키를 만들어 "
-                "backend/.env의 GEMINI_API_KEY에 넣고 서버를 재시작해주세요.",
-            )
-        raise HTTPException(503, f"표지 인식 실패: {exc}")
+        raise _camera_gemini_http_error(exc, "표지 인식 실패")
 
     # Single vision call returned chapters inline — no second TOC roundtrip.
     return {
@@ -1588,11 +1573,75 @@ async def identify_camera_cover(
         "publisher": cover.get("publisher", ""),
         "translator": cover.get("translator", ""),
         "edition": cover.get("edition", ""),
+        "isbn": cover.get("isbn", ""),
         "confidence": cover.get("confidence", 0.0),
         "evidence": cover.get("evidence", ""),
         "matched_edition": cover.get("matched_edition", ""),
         "toc": cover.get("chapters", []) or [],
         "toc_error": "",
+    }
+
+
+def _camera_gemini_http_error(exc: Exception, prefix: str) -> HTTPException:
+    """Map raw Gemini failures to short, actionable Korean messages.
+
+    Quota / billing / expired-key errors hit users a lot during testing —
+    they should see what to do next, not a stack trace."""
+    msg = str(exc)
+    if "RESOURCE_EXHAUSTED" in msg or "429" in msg or "prepayment" in msg.lower():
+        return HTTPException(
+            503,
+            "Gemini API 크레딧이 부족해요. "
+            "https://ai.studio/projects 에서 결제 정보를 확인해주세요.",
+        )
+    if "API_KEY_INVALID" in msg or "API key expired" in msg or "key not valid" in msg.lower():
+        return HTTPException(
+            503,
+            "Gemini API 키가 만료됐어요. "
+            "https://aistudio.google.com/apikey 에서 새 키를 만들어 "
+            "backend/.env의 GEMINI_API_KEY에 넣고 서버를 재시작해주세요.",
+        )
+    return HTTPException(503, f"{prefix}: {exc}")
+
+
+@app.post("/camera/toc-from-photo")
+async def camera_toc_from_photo(
+    photo: UploadFile | None = None,
+    source: str = Form(default=""),
+    book_name: str = Form(default=""),
+    user: dict | None = Depends(current_user),
+    x_client_id: str | None = Header(default=None, alias="X-Client-Id"),
+    _rl: None = Depends(rate_limit_ai),
+) -> dict:
+    """Read the printed 목차 verbatim from a photo of the book's TOC page.
+
+    The most accurate TOC source we have — the page in the reader's hands is
+    the ground truth, so this works even for books no bookstore indexes.
+    Multi-page TOCs: the client calls this once per photographed page and
+    merges the results (the server stays stateless). Same photo sources as
+    /camera/identify (multipart upload or the XIAO board)."""
+    image_bytes = await _resolve_camera_photo(photo, source)
+    try:
+        result = await extract_toc_from_photo(image_bytes, book_name)
+    except Exception as exc:
+        raise _camera_gemini_http_error(exc, "목차 페이지 판독 실패")
+
+    chapters = result.get("chapters") or []
+    if not result.get("is_toc_page") or not chapters:
+        return {
+            "toc": [],
+            "matched_edition": "",
+            "toc_error": result.get("reason")
+            or "목차 페이지를 읽지 못했어요. 목차가 잘 보이게 다시 찍어주세요.",
+            "verbatim": False,
+            "source": "photo",
+        }
+    return {
+        "toc": chapters,
+        "matched_edition": f"책에서 직접 찍은 목차 ({len(chapters)}개 항목)",
+        "toc_error": "",
+        "verbatim": True,
+        "source": "photo",
     }
 
 
@@ -1607,6 +1656,9 @@ class TocLookupIn(BaseModel):
     publisher: str = ""
     translator: str = ""
     edition: str = ""
+    # ISBN read off the cover barcode by /camera/identify — when present it
+    # pinpoints the exact edition on Yes24, beating every fuzzy text query.
+    isbn: str = ""
 
 
 @app.post("/camera/toc-lookup")
@@ -1636,7 +1688,8 @@ async def lookup_camera_toc(
 
     async def _do_crawl():
         crawl = await crawl_toc_for_book(
-            body.book_name, body.author, body.publisher, body.edition
+            body.book_name, body.author, body.publisher, body.edition,
+            isbn=body.isbn,
         )
         if not crawl.get("toc_text"):
             return None
@@ -1678,8 +1731,9 @@ async def lookup_camera_toc(
                     ),
                     "toc_error": "",
                     # Lets the frontend distinguish "real scraped TOC" from an
-                    # LLM guess — auto-upgrade only adopts scraped ones.
+                    # LLM guess — auto-upgrade only adopts verbatim ones.
                     "source": "yes24",
+                    "verbatim": True,
                 }
     except Exception:
         pass
@@ -1694,9 +1748,16 @@ async def lookup_camera_toc(
             "matched_edition": toc_result.get("matched_edition", "") or "",
             "toc_error": "",
             "source": "llm",
+            "verbatim": False,
         }
     except Exception as exc:
-        return {"toc": [], "matched_edition": "", "toc_error": str(exc), "source": "none"}
+        return {
+            "toc": [],
+            "matched_edition": "",
+            "toc_error": str(exc),
+            "source": "none",
+            "verbatim": False,
+        }
 
 
 async def _resolve_camera_photo(photo: UploadFile | None, source: str = "") -> bytes:

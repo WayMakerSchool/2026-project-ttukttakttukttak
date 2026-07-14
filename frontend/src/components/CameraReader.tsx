@@ -43,12 +43,19 @@ type CoverInfo = {
   publisher: string;
   translator: string;
   edition: string;
+  isbn?: string;
   confidence: number;
   evidence: string;
   toc?: Chapter[];
   matched_edition?: string;
   toc_error?: string;
 };
+
+// Where the currently displayed TOC came from. Strictly ordered by trust:
+// photo (shot of the printed 목차 page) > store (bookstore verbatim) >
+// llm (AI-knowledge guess). Upgrades may only move up this ladder — the
+// background store upgrade must never overwrite a photographed TOC.
+type TocSource = "llm" | "store" | "photo";
 
 type CamMode = "phone" | "board";
 
@@ -66,6 +73,11 @@ export function CameraReader({ onBack }: Props) {
   const [editTranslator, setEditTranslator] = useState("");
   const [editEdition, setEditEdition] = useState("");
   const [refetchingToc, setRefetchingToc] = useState(false);
+  const [tocSource, setTocSource] = useState<TocSource>("llm");
+  // Ref mirror for async callbacks — the store upgrade resolves seconds
+  // after launch and must see the LATEST source, not a stale closure.
+  const tocSourceRef = useRef<TocSource>("llm");
+  const [tocShooting, setTocShooting] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [creating, setCreating] = useState(false);
   const [identifying, setIdentifying] = useState(false);
@@ -344,6 +356,7 @@ export function CameraReader({ onBack }: Props) {
       // TOC lookup is grounded in this specific edition.
       setBookName(result.title);
       setCover(result);
+      markTocSource("llm");
       setEditAuthor(result.author || "");
       setEditPublisher(result.publisher || "");
       setEditTranslator(result.translator || "");
@@ -366,6 +379,7 @@ export function CameraReader({ onBack }: Props) {
         result.publisher || "",
         result.translator || "",
         result.edition || "",
+        result.isbn || "",
       );
     } catch (e: any) {
       setError(e?.message ?? String(e));
@@ -374,12 +388,18 @@ export function CameraReader({ onBack }: Props) {
     }
   }
 
+  function markTocSource(s: TocSource) {
+    tocSourceRef.current = s;
+    setTocSource(s);
+  }
+
   async function upgradeTocFromStore(
     name: string,
     author: string,
     publisher: string,
     translator: string,
     edition: string,
+    isbn: string,
   ) {
     setRefetchingToc(true);
     try {
@@ -392,11 +412,15 @@ export function CameraReader({ onBack }: Props) {
           publisher,
           translator,
           edition,
+          isbn,
         }),
       });
       if (!res.ok) return;
       const result = await res.json();
-      if (result.source !== "yes24" || !result.toc?.length) return;
+      if (!result.verbatim || !result.toc?.length) return;
+      // The user may have photographed the actual TOC page while this
+      // lookup was in flight — that TOC is ground truth, never downgrade.
+      if (tocSourceRef.current === "photo") return;
       setCover((c) =>
         c
           ? {
@@ -407,10 +431,82 @@ export function CameraReader({ onBack }: Props) {
             }
           : c,
       );
+      markTocSource("store");
     } catch {
       /* crawler miss — keep the TOC from the vision call */
     } finally {
       setRefetchingToc(false);
+    }
+  }
+
+  // One photographed 목차 page per call; later pages APPEND in shot order.
+  // Dedup on a normalized title so overlapping shots don't duplicate rows.
+  function mergeTocPages(base: Chapter[], added: Chapter[]): Chapter[] {
+    const norm = (t: string) =>
+      t.replace(/[\s,.·:\-'"“”‘’]+/g, "").toLowerCase();
+    const seen = new Set(base.map((c) => norm(c.title)));
+    const out = [...base];
+    for (const c of added) {
+      const k = norm(c.title);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(c);
+    }
+    return out.map((c, i) => ({ ...c, idx: i }));
+  }
+
+  async function captureTocPage(append: boolean) {
+    setError(null);
+    setTocShooting(true);
+    try {
+      const fd = new FormData();
+      fd.append("source", camMode);
+      fd.append("book_name", bookName.trim());
+      if (camMode === "phone") {
+        const blob = await capturePhoneFrame();
+        fd.append("photo", blob, "toc.jpg");
+      }
+      const res = await fetch("/camera/toc-from-photo", {
+        method: "POST",
+        body: fd,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `목차 페이지 판독 실패 (${res.status})`);
+      }
+      const result = await res.json();
+      if (result.toc_error || !result.toc?.length) {
+        setError(
+          result.toc_error ||
+            "목차를 읽지 못했어요. 목차 페이지가 잘 보이게 다시 찍어주세요.",
+        );
+        return;
+      }
+      const base =
+        append && tocSourceRef.current === "photo" ? (cover?.toc ?? []) : [];
+      const merged = mergeTocPages(base, result.toc);
+      const matched = `책에서 직접 찍은 목차 (${merged.length}개 항목)`;
+      setCover((c) =>
+        c
+          ? { ...c, toc: merged, matched_edition: matched, toc_error: "" }
+          : {
+              title: bookName.trim(),
+              author: editAuthor,
+              publisher: editPublisher,
+              translator: editTranslator,
+              edition: editEdition,
+              confidence: 0,
+              evidence: "",
+              toc: merged,
+              matched_edition: matched,
+              toc_error: "",
+            },
+      );
+      markTocSource("photo");
+    } catch (e: any) {
+      setError(e?.message ?? String(e));
+    } finally {
+      setTocShooting(false);
     }
   }
 
@@ -429,6 +525,7 @@ export function CameraReader({ onBack }: Props) {
           publisher: editPublisher,
           translator: editTranslator,
           edition: editEdition,
+          isbn: cover?.isbn ?? "",
         }),
       });
       if (!res.ok) {
@@ -450,6 +547,7 @@ export function CameraReader({ onBack }: Props) {
             }
           : c,
       );
+      markTocSource(result.verbatim && result.toc?.length ? "store" : "llm");
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
@@ -819,6 +917,26 @@ export function CameraReader({ onBack }: Props) {
               )}
             </button>
             <button
+              className="cam-btn"
+              onClick={() => captureTocPage(false)}
+              disabled={creating || identifying || tocShooting}
+              title="책의 목차 페이지를 펼쳐서 찍으면 인쇄된 목차를 그대로 읽어옵니다 — 가장 정확해요"
+            >
+              {tocShooting ? (
+                <>
+                  <span className="spinner-sm" /> 목차 읽는 중…
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg>
+                  목차 찍기
+                </>
+              )}
+            </button>
+            <button
               className="cam-cta"
               onClick={createSession}
               disabled={creating || identifying || !bookName.trim()}
@@ -919,6 +1037,27 @@ export function CameraReader({ onBack }: Props) {
                   </li>
                 ))}
               </ol>
+              {tocSource === "photo" && (
+                <div className="cam-bib-actions" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="cam-btn"
+                    onClick={() => captureTocPage(true)}
+                    disabled={tocShooting || creating}
+                  >
+                    {tocShooting ? (
+                      <>
+                        <span className="spinner-sm" /> 목차 읽는 중…
+                      </>
+                    ) : (
+                      "목차 다음 페이지 찍기"
+                    )}
+                  </button>
+                  <span className="cam-bib-hint">
+                    목차가 여러 페이지면 순서대로 이어서 찍어주세요
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

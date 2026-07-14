@@ -160,30 +160,57 @@ _OG_TITLE_RE = re.compile(
 
 _YES24_SEARCH_GOODS_RE = re.compile(r"/[Pp]roduct/[Gg]oods/(\d{4,12})")
 
+_ISBN_JUNK_RE = re.compile(r"[^0-9Xx]")
+
+
+def _clean_isbn(raw: str) -> str:
+    """Normalize an ISBN read off a cover/barcode to bare digits.
+
+    Accepts "979-11-6521-899-2", "ISBN 9788934942467", "89344246X"... and
+    returns "" unless the cleaned value is a plausible ISBN-10 or ISBN-13
+    (13-digit form must start with 978/979 — a stray barcode number like a
+    phone number or price code must not be mistaken for an ISBN)."""
+    s = _ISBN_JUNK_RE.sub("", str(raw or "")).upper()
+    if len(s) == 13 and s.isdigit() and s.startswith(("978", "979")):
+        return s
+    if len(s) == 10 and s[:9].isdigit() and (s[9].isdigit() or s[9] == "X"):
+        return s
+    return ""
+
 
 async def _find_yes24_ids(
-    title: str, author: str, publisher: str, edition: str = ""
-) -> list[str]:
+    title: str, author: str, publisher: str, edition: str = "", isbn: str = ""
+) -> tuple[list[str], set[str]]:
     """Get Yes24 goods IDs for this book — NO LLM involved.
+
+    Returns (ids, isbn_ids): `isbn_ids` marks candidates that came from an
+    ISBN query — those identify the exact edition, so the caller can skip
+    the fuzzy title gate and boost their score.
 
     Yes24's desktop search (`/product/search?domain=BOOK&query=...`) is
     server-rendered HTML: the `/product/goods/{id}` links are right in the
-    markup, in relevance order. We query title+publisher+edition first (this
-    is what disambiguates 개정판/리커버/세트 editions), then title+author,
+    markup, in relevance order. An ISBN query pinpoints the exact edition,
+    so it runs FIRST and, when it hits, is used alone — no dilution with
+    fuzzier queries. Otherwise: title+publisher+edition, then title+author,
     then bare title. ~1-2s per query, deterministic, free."""
     t = title.strip()
-    if not t:
-        return []
+    clean_isbn = _clean_isbn(isbn)
+    if not t and not clean_isbn:
+        return [], set()
     queries: list[str] = []
-    if publisher.strip() and edition.strip():
-        queries.append(f"{t} {publisher.strip()} {edition.strip()}")
-    if publisher.strip():
-        queries.append(f"{t} {publisher.strip()}")
-    if author.strip():
-        queries.append(f"{t} {author.strip()}")
-    queries.append(t)
+    if clean_isbn:
+        queries.append(clean_isbn)
+    if t:
+        if publisher.strip() and edition.strip():
+            queries.append(f"{t} {publisher.strip()} {edition.strip()}")
+        if publisher.strip():
+            queries.append(f"{t} {publisher.strip()}")
+        if author.strip():
+            queries.append(f"{t} {author.strip()}")
+        queries.append(t)
 
     seen: list[str] = []
+    isbn_ids: set[str] = set()
     for q in queries:
         url = (
             "https://www.yes24.com/product/search?domain=BOOK&query="
@@ -197,11 +224,17 @@ async def _find_yes24_ids(
             gid = m.group(1)
             if gid not in seen:
                 seen.append(gid)
+                if q == clean_isbn:
+                    isbn_ids.add(gid)
+        # An ISBN hit IS the exact edition — use it alone, don't dilute
+        # with fuzzier queries.
+        if q == clean_isbn and seen:
+            return seen[:4], isbn_ids
         # The publisher-scoped query is the most precise — if it already
         # produced candidates, don't dilute them with broader queries.
         if len(seen) >= 4:
             break
-    return seen[:8]
+    return seen[:8], isbn_ids
 
 
 def _title_match(og_title: str, want_title: str) -> bool:
@@ -253,47 +286,55 @@ def _edition_match(og_title: str, edition: str) -> bool:
 
 
 async def crawl_toc_for_book(
-    title: str, author: str = "", publisher: str = "", edition: str = ""
+    title: str, author: str = "", publisher: str = "", edition: str = "",
+    isbn: str = "",
 ) -> dict:
     """Find a Yes24 product page for this book and pull its 목차 verbatim.
 
     Strategy:
       1) Scrape Yes24's own search results for candidate goods IDs (no LLM).
+         An ISBN (read off the cover barcode) pinpoints the exact edition.
       2) Fetch the top 4 candidates IN PARALLEL (bounded so we don't burn
          50+ seconds chasing dead URLs sequentially).
       3) For each candidate, verify og:title actually names this book and
-         score by publisher match + TOC length.
+         score by ISBN provenance + edition + publisher match + TOC length.
       4) Return the printed TOC verbatim from the winning page."""
-    ids = await _find_yes24_ids(title, author, publisher, edition)
+    ids, isbn_ids = await _find_yes24_ids(title, author, publisher, edition, isbn)
     if not ids:
         return {"toc_text": "", "source_url": ""}
 
     # Parallel fetch of the top candidates. 6s per fetch × 4 candidates in
     # parallel ≈ 6-8s total, vs ~40s if we walked them sequentially.
     candidates = ids[:4]
-    async def fetch(gid: str) -> tuple[str, str]:
+    async def fetch(gid: str) -> tuple[str, str, bool]:
         url = f"https://www.yes24.com/Product/Goods/{gid}"
         try:
             html = await asyncio.to_thread(_http_get, url, 6.0)
         except Exception:
-            return (url, "")
-        return (url, html or "")
+            return (url, "", gid in isbn_ids)
+        return (url, html or "", gid in isbn_ids)
 
     results = await asyncio.gather(*(fetch(g) for g in candidates))
 
     best: dict = {"toc_text": "", "source_url": "", "score": -1}
-    for product_url, html in results:
+    for product_url, html, from_isbn in results:
         if not html:
             continue
         og = _OG_TITLE_RE.search(html)
         og_title = og.group(1) if og else ""
-        # HARD GATE: title must match. Drops wrong-book hits.
-        if not _title_match(og_title, title):
+        # HARD GATE: title must match. Drops wrong-book hits. ISBN-sourced
+        # candidates skip it — the barcode already identified the edition,
+        # and Yes24's product title may format the same book differently
+        # ("총, 균, 쇠" vs "총 균 쇠") than the cover read gave us.
+        if not from_isbn and not _title_match(og_title, title):
             continue
         toc_text = _extract_toc_text(html)
         if not toc_text or len(toc_text) < 20:
             continue
         score = len(toc_text)
+        # Barcode-exact edition beats every fuzzy signal below.
+        if from_isbn:
+            score += 500_000
         if publisher and publisher in og_title:
             score += 100_000
         # Edition marker beats everything else — same title + same publisher
@@ -562,6 +603,7 @@ Return JSON only (no markdown, no prose):
   "publisher": str,
   "translator": str,
   "edition": str,
+  "isbn": str,
   "confidence": float,
   "evidence": str,
   "matched_edition": str,
@@ -577,6 +619,9 @@ Rules:
 - publisher: as printed (민음사 / 문학동네 / 창비 / Penguin). "" if not visible.
 - translator: 번역가 if visible, else "".
 - edition: any edition marker verbatim, else "".
+- isbn: the ISBN if readable — from the back-cover barcode block, the
+  copyright page, or an "ISBN 979-11-..." line. DIGITS ONLY (strip hyphens
+  and the "ISBN" prefix). "" if not clearly readable — NEVER guess one.
 - confidence: 0.0-1.0. 0.4+ recognized, 0.7+ very sure, 0.9+ crystal clear.
 - evidence: ONE Korean sentence — what you read and how you identified it.
 - matched_edition: ONE Korean sentence stating which edition's TOC you used.
@@ -827,6 +872,7 @@ async def identify_book_from_cover(image_bytes: bytes) -> dict:
     publisher = _clean("publisher", 120)
     translator = _clean("translator", 120)
     edition = _clean("edition", 80)
+    isbn = _clean_isbn(raw.get("isbn", ""))
     matched_edition = _clean("matched_edition", 300)
     source_url = ""
 
@@ -847,12 +893,119 @@ async def identify_book_from_cover(image_bytes: bytes) -> dict:
         "publisher": publisher,
         "translator": translator,
         "edition": edition,
+        "isbn": isbn,
         "confidence": max(0.0, min(1.0, conf)),
         "evidence": _clean("evidence", 300),
         "matched_edition": matched_edition,
         "source_url": source_url,
         "chapters": chapters,
     }
+
+
+TOC_PAGE_PROMPT = """You are looking at a photo of the printed TABLE OF
+CONTENTS (목차 / 차례 / Contents) page of a physical book, taken with a phone
+or laptop camera.{book_hint}
+
+TRANSCRIBE the printed table of contents EXACTLY:
+- Extract EVERY visible entry, top to bottom, in printed order.
+- Copy each title VERBATIM in the printed language — do NOT translate,
+  shorten, "fix", reorder, merge, or invent entries.
+- Strip trailing dot leaders and page numbers
+  ("3장 도시의 밤 ……… 87" → "3장 도시의 밤") but keep chapter numbers
+  that are part of the title ("제3장", "Chapter 5").
+- Part/section headings (제1부, Part II, 1부 …) are entries of their own.
+- Small indented sub-topic lines printed UNDER a chapter belong in that
+  chapter's `summary`, joined with " / " — NOT as separate entries.
+- Skip page furniture: the "목차/차례/Contents" heading itself, page
+  numbers of the TOC page, decorative rules.
+- If the photo shows two facing TOC pages, read left page first, then right.
+
+Also annotate every entry for an ambient-music generator:
+- summary: printed sub-topics if present; else ONE short Korean sentence
+  about this part of the book if you know it; else "".
+- music_prompt: ONE concise English line — instruments, mood word, genre,
+  tempo feel. Vary across entries.
+- bpm: integer 40-160 matching the part's pace.
+- mood: ONE short Korean word like "고요", "긴장", "슬픔", "환희", "신비".
+
+If the photo is NOT a table-of-contents page (body text, cover, a hand,
+too blurry to read), return is_toc_page=false and say why in ONE short
+Korean sentence in `reason`.
+
+Return JSON only:
+{
+  "is_toc_page": bool,
+  "reason": str,
+  "entries": [
+    {"title": str, "summary": str, "music_prompt": str, "bpm": int,
+     "mood": str}
+  ]
+}
+
+No prose, only the JSON."""
+
+
+async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dict:
+    """Read the printed TOC verbatim from a photo of the book's 목차 page.
+
+    ONE vision call per photo — transcription and music annotation together
+    (same single-call principle as identify_book_from_cover). This is the
+    accuracy ceiling for TOC discovery: the page in the reader's hands IS
+    the ground truth, so it works even for books no bookstore indexes.
+    Multi-page TOCs are handled by the client photographing page by page
+    and merging — the server stays stateless."""
+    client = _get_client()
+    clean_bytes, _sharpness, _ok = _enhance_for_vision(image_bytes)
+    hint = (
+        f' The book is "{book_name.strip()}" — use that only to disambiguate'
+        " hard-to-read characters, never to substitute chapters you expect."
+        if book_name.strip()
+        else ""
+    )
+    prompt = TOC_PAGE_PROMPT.replace("{book_hint}", hint)
+
+    async def _call(model_name: str) -> dict:
+        resp = await asyncio.to_thread(
+            client.models.generate_content,
+            model=model_name,
+            contents=[
+                prompt,
+                types.Part.from_bytes(data=clean_bytes, mime_type="image/jpeg"),
+            ],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.1,
+                # Dense TOCs (40+ entries with annotations) need headroom.
+                max_output_tokens=16384,
+            ),
+        )
+        return json.loads(resp.text or "{}")
+
+    # OCR fidelity matters most here — flash first, lite as fallback.
+    last_exc: Exception | None = None
+    raw: dict = {}
+    for model in ("gemini-3.5-flash", "gemini-3.1-flash-lite"):
+        try:
+            raw = await _call(model)
+            last_exc = None
+            break
+        except Exception as exc:
+            last_exc = exc
+    if last_exc is not None:
+        raise RuntimeError(f"목차 페이지 판독 호출 실패: {last_exc}")
+
+    is_toc_page = bool(raw.get("is_toc_page", False))
+    reason = str(raw.get("reason", "")).strip()[:300]
+    chapters: list[dict] = []
+    for item in raw.get("entries") or []:
+        if not isinstance(item, dict):
+            continue
+        ch = _normalize_chapter(item, len(chapters))
+        if ch:
+            chapters.append(ch)
+        if len(chapters) >= 50:
+            break
+    return {"is_toc_page": is_toc_page, "reason": reason, "chapters": chapters}
 
 
 DETECT_PROMPT = """A reader is reading "{book_name}". The camera just snapped
