@@ -1334,10 +1334,20 @@ def _enhance_for_vision(
                 (round(img.size[0] * scale), round(img.size[1] * scale)), Image.LANCZOS
             )
         score = _sharpness_score(img)  # measure BEFORE sharpening
-        img = ImageOps.autocontrast(img, cutoff=1)  # fix dark / uneven lighting
-        img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=120, threshold=2))
+        gray_mean = ImageStat.Stat(img.convert("L")).mean[0]  # 0-255
+        # Overexposed / washed-out page (bright white book + table blowing out
+        # the auto-exposure): darken midtones with a gamma curve FIRST so
+        # autocontrast then has real range to stretch, instead of a flat blob.
+        if gray_mean > 170:
+            g = 1.7
+            img = img.point(lambda i: int(((i / 255.0) ** g) * 255))
+        # Per-channel autocontrast both boosts contrast AND neutralizes a color
+        # cast (the magenta tint from the sensor's auto white balance), since it
+        # normalizes each RGB band independently. Cut harder on a flat source.
+        img = ImageOps.autocontrast(img, cutoff=2 if gray_mean > 170 else 1)
+        img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=140, threshold=2))
         out = io.BytesIO()
-        img.save(out, format="JPEG", quality=88)
+        img.save(out, format="JPEG", quality=90)
         return out.getvalue(), score, True
     except Exception as exc:  # noqa: BLE001 - best-effort, never block detection
         print(f"[camera] image enhance failed: {exc!r}")
