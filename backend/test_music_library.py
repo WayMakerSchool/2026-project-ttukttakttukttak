@@ -1,0 +1,99 @@
+"""Unit tests for the pre-generated music library matcher (pure logic,
+no Lyria, no network — embeddings are faked, disk presence is patched)."""
+
+import music_library as m
+
+
+def _fake_ok(monkeypatch, ids=None):
+    """Pretend every (or selected) track file exists on disk."""
+    monkeypatch.setattr(
+        m, "_track_ok", lambda tid: (ids is None or tid in ids)
+    )
+
+
+def _vec(*head):
+    """768-dim unit-ish vector with a distinctive head."""
+    v = [0.0] * m.EMBED_DIM
+    for i, x in enumerate(head):
+        v[i] = x
+    return v
+
+
+def test_catalog_has_100_tracks_10_moods():
+    cat = m.load_library()
+    assert len(cat) == 100
+    assert len({t["mood_ko"] for t in cat}) == 10
+    assert len({t["id"] for t in cat}) == 100  # unique ids
+
+
+def test_cos_basic():
+    assert m._cos([1, 0], [1, 0]) == 1.0
+    assert m._cos([1, 0], [0, 1]) == 0.0
+    assert m._cos([0, 0], [1, 0]) == 0.0  # zero vector safe
+
+
+def test_fallback_matches_mood_then_bpm(monkeypatch):
+    _fake_ok(monkeypatch)
+    cat = m.load_library()
+    ch = {"mood": "슬픔", "bpm": 55}
+    t = m._fallback_match(ch, cat)
+    assert t["mood_ko"] == "슬픔"
+    assert abs(t["bpm"] - 55) <= 10
+
+
+def test_fallback_unknown_mood_uses_bpm(monkeypatch):
+    _fake_ok(monkeypatch)
+    cat = m.load_library()
+    t = m._fallback_match({"mood": "요상함", "bpm": 150}, cat)
+    assert abs(t["bpm"] - 150) <= 15  # nearest-bpm pool-wide
+
+
+def test_pick_with_embeddings_chooses_similar(monkeypatch):
+    _fake_ok(monkeypatch)
+    tracks = [
+        {"id": "a", "mood_ko": "슬픔", "bpm": 60, "embedding": _vec(1.0)},
+        {"id": "b", "mood_ko": "기쁨", "bpm": 120, "embedding": _vec(0.0, 1.0)},
+    ]
+    chapters = [{"mood": "?", "bpm": 0}]
+    picks = m.pick_tracks_for_chapters(chapters, [_vec(0.9, 0.1)], tracks)
+    assert picks[0]["id"] == "a"
+
+
+def test_pick_rotates_within_top3_for_diversity(monkeypatch):
+    _fake_ok(monkeypatch)
+    # Three near-identical tracks: 5 chapters should NOT all land on one track.
+    tracks = [
+        {"id": f"t{i}", "mood_ko": "고요", "bpm": 70,
+         "embedding": _vec(1.0, 0.01 * i)}
+        for i in range(3)
+    ]
+    chapters = [{"mood": "고요", "bpm": 70}] * 5
+    vecs = [_vec(1.0)] * 5
+    picks = m.pick_tracks_for_chapters(chapters, vecs, tracks)
+    assert len({p["id"] for p in picks}) >= 2
+
+
+def test_pick_without_embeddings_falls_back(monkeypatch):
+    _fake_ok(monkeypatch)
+    cat = m.load_library()
+    chapters = [{"mood": "분노", "bpm": 140}, {"mood": "고요", "bpm": 60}]
+    picks = m.pick_tracks_for_chapters(chapters, None, cat)
+    assert picks[0]["mood_ko"] == "분노"
+    assert picks[1]["mood_ko"] == "고요"
+
+
+def test_pick_only_uses_tracks_on_disk(monkeypatch):
+    cat = m.load_library()
+    only = {"calm_00", "calm_01"}
+    _fake_ok(monkeypatch, ids=only)
+    picks = m.pick_tracks_for_chapters([{"mood": "분노", "bpm": 150}], None, cat)
+    assert picks[0]["id"] in only  # never picks a missing file
+
+
+def test_pick_raises_when_library_empty(monkeypatch):
+    _fake_ok(monkeypatch, ids=set())
+    try:
+        m.pick_tracks_for_chapters([{"mood": "x"}], None, m.load_library())
+        assert False, "should raise"
+    except RuntimeError:
+        pass

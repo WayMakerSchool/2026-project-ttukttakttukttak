@@ -1503,6 +1503,36 @@ async def _generate_camera_audio_background(
     session["audio_status"] = "generating"
     session["ready_segments"] = []
 
+    # 사전 생성 라이브러리가 있으면 Lyria를 아예 부르지 않는다: 챕터 무드를
+    # 임베딩(세션당 배치 1콜)으로 최유사 트랙에 매칭하고 심링크만 건다.
+    # 수 초 안에 전 챕터 ready + 생성 비용 0. 라이브러리가 없거나 배정이
+    # 실패하면 기존 Lyria 경로로 폴백.
+    import music_library
+
+    if music_library.library_ready():
+        try:
+            picks = await music_library.assign_tracks(toc)
+            for ch, tr in zip(toc, picks):
+                dst = camera_segment_path(session_id, ch["idx"])
+                src = music_library.track_path(tr["id"])
+                if dst.exists() or dst.is_symlink():
+                    dst.unlink()
+                dst.symlink_to(src)
+                ch["track_id"] = tr["id"]
+                session["ready_segments"].append(ch["idx"])
+            session["audio_status"] = "ready"
+            print(
+                f"[camera] {session_id} library-matched {len(picks)} chapters "
+                f"(no Lyria): "
+                + ", ".join(f"{c['idx']}→{t['id']}" for c, t in zip(toc[:8], picks[:8]))
+                + ("…" if len(picks) > 8 else "")
+            )
+            return
+        except Exception as exc:
+            print(f"[camera] {session_id} library assign failed, "
+                  f"falling back to Lyria: {exc!r}")
+            session["ready_segments"] = []
+
     context_prompt = await location_music_context(lat, lon)
     if context_prompt:
         print(f"[camera] {session_id} environment tint: {context_prompt!r}")
