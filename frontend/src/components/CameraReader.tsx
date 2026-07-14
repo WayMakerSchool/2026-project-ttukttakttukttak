@@ -170,12 +170,12 @@ export function CameraReader({ onBack }: Props) {
       const attempts: MediaStreamConstraints[] = [];
       if (deviceId) {
         attempts.push({
-          video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         });
       }
       attempts.push({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       attempts.push({ video: true, audio: false });
@@ -271,11 +271,11 @@ export function CameraReader({ onBack }: Props) {
         setTimeout(res, 1500);
       });
     }
-    // Cap the long side at 1024px and quality at 0.72. Gemini Vision
-    // downsamples larger images anyway — uploading a 1280×720 raw frame at
-    // 0.85 quality costs ~140KB and adds ~1-2s on slow networks; the
-    // downscaled version is ~40KB and reads the same off a book cover.
-    const MAX_DIM = 1024;
+    // Keep the full sensor resolution (long side up to 1920px) at high JPEG
+    // quality. 1024px/0.72 was too soft for reading a 목차 page's small print
+    // and blurred book-cover text; 1920px/0.92 stays crisp and is still only
+    // ~200-350KB. Gemini Vision keeps the extra detail for OCR.
+    const MAX_DIM = 1920;
     const srcW = v.videoWidth || 1280;
     const srcH = v.videoHeight || 720;
     const scale = Math.min(1, MAX_DIM / Math.max(srcW, srcH));
@@ -286,12 +286,13 @@ export function CameraReader({ onBack }: Props) {
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas context 생성 실패");
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(v, 0, 0, w, h);
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error("이미지 인코딩 실패"))),
         "image/jpeg",
-        0.72,
+        0.92,
       );
     });
   }
