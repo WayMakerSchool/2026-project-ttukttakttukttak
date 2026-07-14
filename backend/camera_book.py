@@ -303,9 +303,11 @@ async def crawl_toc_for_book(
     if not ids:
         return {"toc_text": "", "source_url": ""}
 
-    # Parallel fetch of the top candidates. 6s per fetch × 4 candidates in
-    # parallel ≈ 6-8s total, vs ~40s if we walked them sequentially.
-    candidates = ids[:4]
+    # Parallel fetch of the top candidates. 6s per fetch × 6 candidates in
+    # parallel ≈ 6-8s total, vs ~60s if we walked them sequentially. Six (not
+    # four) widens recall for books whose exact edition sits a few results
+    # down, at no extra wall-clock since they run concurrently.
+    candidates = ids[:6]
     async def fetch(gid: str) -> tuple[str, str, bool]:
         url = f"https://www.yes24.com/Product/Goods/{gid}"
         try:
@@ -355,6 +357,118 @@ async def crawl_toc_for_book(
     if best["toc_text"]:
         return {"toc_text": best["toc_text"], "source_url": best["source_url"]}
     return {"toc_text": "", "source_url": ""}
+
+
+# ── Aladin official OpenAPI (TTB) — the single most reliable Korean-book TOC
+# source. Aladin's product HTML loads its 목차 via JS (unscrapable, verified),
+# but the TTB ItemLookUp API returns it as a structured field. Dormant until a
+# free key is configured; get one at https://www.aladin.co.kr/ttb/wblog_manage.aspx
+ALADIN_TTB_KEY = os.environ.get("ALADIN_TTB_KEY", "").strip()
+
+
+async def crawl_toc_aladin_api(isbn: str) -> dict:
+    """Official Aladin TTB TOC by ISBN. Returns {} unless a valid ALADIN_TTB_KEY
+    is set AND the API has a 목차 for this exact ISBN.
+
+    The API hands back `item[0].subInfo.toc` as an HTML string with <br>
+    separators; we strip it and reuse the same local parser as the Yes24 path,
+    so the chapter LIST is verbatim from Aladin, never model-invented."""
+    clean = _clean_isbn(isbn)
+    if not ALADIN_TTB_KEY or not clean:
+        return {}
+    id_type = "ISBN13" if len(clean) == 13 else "ISBN"
+    url = (
+        "https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?"
+        f"ttbkey={quote_plus(ALADIN_TTB_KEY)}&itemIdType={id_type}"
+        f"&ItemId={quote_plus(clean)}&output=js&Version=20131101&OptResult=Toc"
+    )
+    try:
+        body = await asyncio.to_thread(_http_get, url, 6.0)
+        data = json.loads(body)
+    except Exception:
+        return {}
+    items = data.get("item") if isinstance(data, dict) else None
+    if not items or not isinstance(items[0], dict):
+        return {}
+    sub = items[0].get("subInfo")
+    toc_html = sub.get("toc", "") if isinstance(sub, dict) else ""
+    toc_text = _strip_html(toc_html)
+    if len(toc_text) < 20:
+        return {}
+    return {"toc_text": toc_text[:8000], "source_url": str(items[0].get("link", ""))}
+
+
+_TITLE_NORM_RE = re.compile(r"[\s,.·:;!?…\-‘’'\"()\[\]<>《》「」『』]+")
+
+
+def _norm_title(s: str) -> str:
+    """Aggressively normalize a chapter title for cross-source comparison —
+    strip spacing/punctuation and lowercase so "제3장. 도시의 밤" and
+    "제 3 장 도시의밤" compare equal."""
+    return _TITLE_NORM_RE.sub("", str(s or "")).lower()
+
+
+def reconcile_tocs(candidates: list[dict]) -> dict:
+    """Cross-check TOC candidates from several sources, pick the most
+    trustworthy chapter LIST, and emit a human-readable agreement note.
+
+    `candidates` is a list of {"name", "label", "chapters"} in DESCENDING
+    trust order. The first candidate that actually has chapters supplies the
+    titles verbatim (what the reader checks against the physical book); the
+    remaining sources only lend per-chapter `summary` where a title matches.
+    The agreement note compares the winner against the next-best source so the
+    UI can show, e.g., "알라딘과 Yes24가 20장 일치 ✅".
+
+    Returns {"toc", "authority", "agreement", "confidence"}."""
+    cand = [
+        {**c, "chapters": [ch for ch in (c.get("chapters") or []) if ch.get("title")]}
+        for c in candidates
+    ]
+    winner = next((c for c in cand if c["chapters"]), None)
+    if not winner:
+        return {"toc": [], "authority": "none", "agreement": "", "confidence": 0.0}
+
+    base = winner["chapters"]
+    # Borrow summaries from the OTHER sources for any base entry that lacks one.
+    meta_by_title: dict[str, dict] = {}
+    for c in cand:
+        if c is winner:
+            continue
+        for ch in c["chapters"]:
+            meta_by_title.setdefault(_norm_title(ch["title"]), ch)
+    merged: list[dict] = []
+    for i, ch in enumerate(base):
+        out = {**ch, "idx": i}
+        donor = meta_by_title.get(_norm_title(ch["title"]))
+        if donor and not out.get("summary") and donor.get("summary"):
+            out["summary"] = donor["summary"]
+        merged.append(out)
+
+    # Agreement: overlap of the winner's title set with the next-best source.
+    cross = next((c for c in cand if c is not winner and c["chapters"]), None)
+    confidence = 0.6 if winner["name"] == "llm" else 0.8
+    agreement = ""
+    if cross:
+        base_set = {_norm_title(c["title"]) for c in base}
+        cross_set = {_norm_title(c["title"]) for c in cross["chapters"]}
+        inter = len(base_set & cross_set)
+        ratio = inter / (max(len(base_set), len(cross_set)) or 1)
+        a, b = winner["label"], cross["label"]
+        na, nb = len(base), len(cross["chapters"])
+        if ratio >= 0.9 and na == nb:
+            agreement, confidence = f"{a}와 {b}가 {na}장 일치 ✅", 0.97
+        elif ratio >= 0.6:
+            agreement = f"{a}({na}장)와 {b}({nb}장) 대체로 일치 — {a} 기준 사용"
+            confidence = 0.85
+        else:
+            agreement = f"{a}({na}장)와 {b}({nb}장) 불일치 — 더 정확한 {a} 기준 사용"
+            confidence = 0.7
+    return {
+        "toc": merged,
+        "authority": winner["name"],
+        "agreement": agreement,
+        "confidence": round(confidence, 2),
+    }
 
 
 def _get_client() -> genai.Client:
@@ -932,10 +1046,17 @@ If the photo is NOT a table-of-contents page (body text, cover, a hand,
 too blurry to read), return is_toc_page=false and say why in ONE short
 Korean sentence in `reason`.
 
+SELF-CHECK before returning: scan the page once more top-to-bottom and
+confirm you captured EVERY printed line — a missed or duplicated entry is
+the most common error. Set `confidence` honestly: 0.9+ only if the text was
+crisp and you are sure no line is missing; lower it for glare, blur, a
+tight gutter, or any line you had to guess.
+
 Return JSON only:
 {
   "is_toc_page": bool,
   "reason": str,
+  "confidence": float,
   "entries": [
     {"title": str, "summary": str, "music_prompt": str, "bpm": int,
      "mood": str}
@@ -943,6 +1064,29 @@ Return JSON only:
 }
 
 No prose, only the JSON."""
+
+
+TOC_VERIFY_PROMPT = """Below is a FIRST-PASS transcription of the printed table
+of contents in the attached photo, one entry per line prefixed by its index:
+
+{draft}
+
+Look at the SAME photo again and RECHECK the transcription line by line
+against what is actually printed. Return a CORRECTED list that fixes ONLY
+real transcription errors:
+- ADD any printed entry that is missing (a wrong entry COUNT is the most
+  common first-pass error).
+- FIX misread characters (common OCR confusions: 己/已/巳, 目/日, 章/場,
+  rn/m, O/0, l/1).
+- REMOVE any line that is NOT a real TOC entry (the "목차/차례" heading,
+  a page number, a duplicated entry, a stray body line).
+- REORDER to the printed top-to-bottom order if the draft is out of order.
+Keep every already-correct entry EXACTLY as printed — never translate,
+paraphrase, or "improve" wording. If the draft is already perfect, return it
+unchanged.
+
+Return JSON only: {"entries": [{"title": str}]} — titles only, verbatim, in
+printed order. No prose."""
 
 
 async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dict:
@@ -998,6 +1142,10 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
 
     is_toc_page = bool(raw.get("is_toc_page", False))
     reason = str(raw.get("reason", "")).strip()[:300]
+    try:
+        confidence = float(raw.get("confidence", 0.0))
+    except (ValueError, TypeError):
+        confidence = 0.0
     chapters: list[dict] = []
     for item in raw.get("entries") or []:
         if not isinstance(item, dict):
@@ -1007,7 +1155,81 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
             chapters.append(ch)
         if len(chapters) >= 50:
             break
-    return {"is_toc_page": is_toc_page, "reason": reason, "chapters": chapters}
+
+    # Second look ONLY when the first read was shaky — keeps the happy path a
+    # single Gemini call (per the one-call cost principle) while catching
+    # missed/misread lines when it matters. Titles are the accuracy-critical
+    # part; the verify pass returns a corrected title list, metadata is kept.
+    if chapters and confidence < 0.9:
+        try:
+            corrected = await _verify_toc_from_photo(client, clean_bytes, chapters)
+        except Exception:
+            corrected = None
+        if corrected:
+            chapters = corrected
+
+    return {
+        "is_toc_page": is_toc_page,
+        "reason": reason,
+        "confidence": max(0.0, min(1.0, confidence)),
+        "chapters": chapters,
+    }
+
+
+async def _verify_toc_from_photo(
+    client: genai.Client, image_bytes: bytes, draft: list[dict]
+) -> list[dict] | None:
+    """Re-read the SAME TOC photo with the first-pass list in hand and return a
+    corrected chapter list (titles verbatim). Music metadata is carried over
+    from the draft by normalized-title match; new lines get defaults."""
+    numbered = "\n".join(f"[{c['idx']}] {c['title']}" for c in draft)
+    prompt = TOC_VERIFY_PROMPT.replace("{draft}", numbered[:6000])
+    resp = await asyncio.to_thread(
+        client.models.generate_content,
+        model="gemini-3.1-flash-lite",  # cheap check — the hard OCR is done
+        contents=[
+            prompt,
+            types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+        ],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.0,
+            max_output_tokens=8192,
+        ),
+    )
+    raw = json.loads(resp.text or "{}")
+    items = raw.get("entries") if isinstance(raw, dict) else raw
+    if not isinstance(items, list) or not items:
+        return None
+    meta_by_title = {_norm_title(c["title"]): c for c in draft}
+    out: list[dict] = []
+    for it in items:
+        title = (
+            str(it.get("title", "")).strip() if isinstance(it, dict) else str(it).strip()
+        )
+        if not title:
+            continue
+        donor = meta_by_title.get(_norm_title(title))
+        if donor:
+            out.append({**donor, "idx": len(out), "title": title[:120]})
+        else:
+            out.append(
+                {
+                    "idx": len(out),
+                    "title": title[:120],
+                    "summary": "",
+                    "music_prompt": "calm ambient reading music, soft piano and warm pads",
+                    "bpm": 80,
+                    "mood": "차분",
+                }
+            )
+        if len(out) >= 50:
+            break
+    # Guard against a bad verify pass nuking a good draft: if it returned far
+    # fewer entries than we started with, distrust it.
+    if len(out) < max(1, len(draft) // 2):
+        return None
+    return out
 
 
 DETECT_PROMPT = """A reader is reading "{book_name}". The camera just snapped

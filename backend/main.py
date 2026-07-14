@@ -42,7 +42,10 @@ from camera_book import (
     generate_book_characters,
     generate_book_toc,
     crawl_toc_for_book,
+    crawl_toc_aladin_api,
     _format_scraped_toc,
+    _parse_scraped_toc_locally,
+    reconcile_tocs,
     extract_toc_from_photo,
     identify_book_from_cover,
     trigger_and_fetch_photo,
@@ -1687,19 +1690,44 @@ async def lookup_camera_toc(
     # but when the crawler is fast we get the actual printed TOC.
 
     async def _do_crawl():
-        crawl = await crawl_toc_for_book(
-            body.book_name, body.author, body.publisher, body.edition,
-            isbn=body.isbn,
+        # Two verbatim sources in parallel: Aladin's official TTB API (ISBN-exact,
+        # highest trust — dormant until ALADIN_TTB_KEY is set) and the Yes24
+        # scrape. When both hit we cross-check them and note the agreement;
+        # Aladin wins ties as the authoritative edition source.
+        aladin_res, yes24_res = await asyncio.gather(
+            crawl_toc_aladin_api(body.isbn),
+            crawl_toc_for_book(
+                body.book_name, body.author, body.publisher, body.edition,
+                isbn=body.isbn,
+            ),
         )
-        if not crawl.get("toc_text"):
+        aladin_text = (aladin_res or {}).get("toc_text", "")
+        yes24_text = (yes24_res or {}).get("toc_text", "")
+        if not aladin_text and not yes24_text:
             return None
+
+        # Local title lists (no LLM) just for the agreement cross-check.
+        recon = reconcile_tocs([
+            {"name": "aladin", "label": "알라딘",
+             "chapters": _parse_scraped_toc_locally(aladin_text)},
+            {"name": "yes24", "label": "Yes24",
+             "chapters": _parse_scraped_toc_locally(yes24_text)},
+        ])
+        if recon["authority"] == "aladin":
+            win_text, win_url, win_name = (
+                aladin_text, (aladin_res or {}).get("source_url", ""), "aladin"
+            )
+        else:
+            win_text, win_url, win_name = (
+                yes24_text, (yes24_res or {}).get("source_url", ""), "yes24"
+            )
+        # Only the winning source's raw text goes to the (cheap) metadata pass.
         chs = await _format_scraped_toc(
-            crawl["toc_text"],
-            body.book_name,
-            body.author,
-            body.publisher,
+            win_text, body.book_name, body.author, body.publisher,
         )
-        return (chs, crawl.get("source_url", "")) if chs else None
+        if not chs:
+            return None
+        return (chs, win_url, win_name, recon.get("agreement", ""))
 
     async def _do_llm():
         return await generate_book_toc(
@@ -1721,18 +1749,21 @@ async def lookup_camera_toc(
             crawler_result = crawl_task.result()
             if crawler_result:
                 llm_task.cancel()
-                chapters, source_url = crawler_result
+                chapters, source_url, source_name, agreement = crawler_result
+                store_label = "알라딘 공식 API" if source_name == "aladin" else "Yes24"
+                base_note = (
+                    agreement
+                    or f"{store_label}에서 가져온 실제 목차 ({len(chapters)}장)"
+                )
                 return {
                     "toc": chapters,
                     "matched_edition": (
-                        f"Yes24에서 가져온 실제 목차 ({len(chapters)}장) · {source_url}"
-                        if source_url
-                        else f"Yes24에서 가져온 실제 목차 ({len(chapters)}장)"
+                        f"{base_note} · {source_url}" if source_url else base_note
                     ),
                     "toc_error": "",
                     # Lets the frontend distinguish "real scraped TOC" from an
                     # LLM guess — auto-upgrade only adopts verbatim ones.
-                    "source": "yes24",
+                    "source": source_name,
                     "verbatim": True,
                 }
     except Exception:

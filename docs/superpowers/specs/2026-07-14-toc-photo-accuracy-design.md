@@ -42,12 +42,40 @@
 
 ### 조사 결과에 따른 범위 조정 (원안 대비)
 
-원안의 "알라딘 크롤러 추가"는 **제외**:
-- 알라딘: 목차가 상품 페이지에 서버 렌더링되지 않음 (데스크톱/모바일/인쇄용 페이지
-  모두 확인, JS 전용 ajax 로드) → 헤드리스 브라우저 없이는 불가.
-- 교보문고: 비브라우저 요청 차단 (curl 0 byte 응답).
-- 대신 Yes24 ISBN 우선 검색(판본 정확도)과 ①(서점 미보유 책 커버)으로 같은 목표 달성.
-  ①이 모든 미적중 케이스의 최종 안전망.
+원안의 "알라딘 크롤러(HTML 스크래핑) 추가"는 **제외**:
+- 알라딘/교보 모두 목차가 상품 페이지에 서버 렌더링되지 않음 (JS ajax 로드, 재확인).
+- 교보문고: 302KB 응답하지만 목차는 별도 비동기 API — 초기 HTML에 없음.
+
+## v2 (2026-07-14) — 정확도 한 단계 더
+
+3-소스 기반 위에서 다음을 추가:
+
+### A. 사진 목차 2-pass 자기검증 (Gemini만, 키 불필요)
+- `extract_toc_from_photo`: 1차 전사 프롬프트에 `confidence` + 자기검증 지시 추가.
+- 1차 `confidence < 0.9`일 때만 `_verify_toc_from_photo`(lite 모델)로 같은
+  이미지를 재판독 — 놓친 줄 추가, 오독 글자 교정, 순서 교정. 평상시엔 1콜 유지
+  ([[feedback_cheap_simple]] 존중). 교정 리스트가 draft 절반 미만이면 무시(안전장치).
+- 라이브 검증: 일부러 1항목 뺀 draft → 실제 호출로 누락 항목 복원 + 오탈자 교정 확인.
+
+### B. 알라딘 공식 TTB API 소스 (옵션, 도먼트)
+- `crawl_toc_aladin_api(isbn)`: `ItemLookUp&OptResult=Toc`의 `subInfo.toc`를
+  `_strip_html` → 기존 로컬 파서로 처리(제목 verbatim, 모델 생성 아님).
+- `ALADIN_TTB_KEY` env 있을 때만 활성. 무료 키:
+  https://www.aladin.co.kr/ttb/wblog_manage.aspx
+- 파서는 네트워크 mock 단위테스트로 검증.
+
+### C. 소스 교차검증 (`reconcile_tocs`, 호출 비용 0)
+- 신뢰 내림차순 후보 리스트를 받아 최상위 verbatim 소스의 제목을 채택,
+  나머지는 summary만 보완. 승자와 차상위 소스의 제목 겹침으로 합의 문구 생성
+  ("알라딘과 Yes24가 20장 일치 ✅" / "불일치 — 더 정확한 X 기준 사용").
+- `/camera/toc-lookup`의 `_do_crawl`이 알라딘·Yes24를 병렬 수집 후 이 함수로
+  승자 선택 + 합의 문구를 `matched_edition`에 실어 UI에 노출.
+- Yes24 후보 폭 4→6으로 확대(동시 fetch라 지연 동일).
+
+### 검증 결과 (v2)
+- 단위 테스트 18개 통과 (reconcile 6, aladin-parse 3, isbn 6, parser 3 등).
+- 라이브: `/camera/toc-lookup` 총균쇠 → Yes24 실제 목차 34장 정확 반환.
+  2-pass verify → 누락/오탈자 복원 확인. 프론트 tsc 통과.
 
 ## 오류 처리
 
