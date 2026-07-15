@@ -714,7 +714,7 @@ export function CameraReader({ onBack }: Props) {
   }
 
   async function detectOnce() {
-    if (!session) return;
+    if (!session || detecting) return; // don't stack overlapping calls
     setDetecting(true);
     setError(null);
     try {
@@ -769,9 +769,12 @@ export function CameraReader({ onBack }: Props) {
     }
   }
 
-  // Auto-detect every 10s while toggled on — fast enough to catch chapter
-  // turns shortly after they happen but slow enough to give Gemini's vision
-  // call time to complete (~3-5s on flash-lite + headroom for the camera).
+  // Auto-detect every 4s while toggled on. A single mood-detect round trip
+  // now runs ~1.5-2s (cached embed client + thinking disabled), so 10s felt
+  // sluggish — a page turn could sit unnoticed for up to 10s before the
+  // music caught up. 4s leaves comfortable headroom over the ~2s call and
+  // the detectOnce() guard above skips a tick if the previous call is still
+  // in flight, so ticks never stack up even on a slow network.
   useEffect(() => {
     if (autoTimerRef.current) {
       clearInterval(autoTimerRef.current);
@@ -780,7 +783,7 @@ export function CameraReader({ onBack }: Props) {
     if (auto && session) {
       autoTimerRef.current = window.setInterval(() => {
         detectOnce();
-      }, 10000);
+      }, 4000);
       detectOnce();
     }
   }, [auto, session?.id]);
