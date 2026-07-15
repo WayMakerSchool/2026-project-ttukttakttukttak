@@ -1529,8 +1529,10 @@ screen), return mood_en="" and say so in evidence. No prose, only JSON."""
 
 async def detect_page_mood(image_bytes: bytes) -> dict:
     """ONE cheap vision call: the emotional mood of the page in view, for the
-    live 'page → nearest song' loop. No TOC, no chapter matching — the page's
-    own feeling drives the music. Returns {mood_en, mood_ko, bpm, evidence}."""
+    live 'page → nearest song' loop. No TOC, no chapter matching — the mood
+    must come from actually READING the page's text, not a rough glance at
+    scene composition — so this keeps the same resolution budget as chapter
+    detection (reads a heading/body text), not a shrunk thumbnail."""
     clean_bytes, sharpness, enhanced = _enhance_for_vision(image_bytes)
     low_quality = enhanced and sharpness < _BLUR_THRESHOLD
     client = _get_client()
@@ -1545,6 +1547,11 @@ async def detect_page_mood(image_bytes: bytes) -> dict:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.2,
+                # Perception + classify-into-10-buckets task, not multi-step
+                # reasoning — skipping thinking cuts latency substantially
+                # (same lever already used for generate_book_characters, where
+                # it took ~18s down to a few seconds).
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         raw = json.loads(resp.text or "{}")
