@@ -229,16 +229,33 @@ def _chapter_text(ch: dict) -> str:
     return ". ".join(p for p in parts if p)
 
 
+_embed_client = None  # cached genai.Client — recreating one costs a real HTTP
+# transport/session setup, which was adding ~200-400ms to EVERY live detect
+# call (this ran once per page, unlike camera_book's cached client for vision).
+
+
+def _get_embed_client():
+    global _embed_client
+    if _embed_client is None:
+        from google import genai
+
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return None
+        _embed_client = genai.Client(api_key=api_key)
+    return _embed_client
+
+
 async def _embed_texts(texts: list[str]) -> list[list[float]] | None:
     """배치 임베딩. 실패 시 None (호출측은 무드 문자열 폴백 사용)."""
     try:
-        from google import genai
         from google.genai import types as gtypes
 
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key or not texts:
+        if not texts:
             return None
-        client = genai.Client(api_key=api_key)
+        client = _get_embed_client()
+        if client is None:
+            return None
         vecs: list[list[float]] = []
         # 배치 한도(100) 여유를 두고 50개씩 청킹 — 100트랙 인덱싱도 2콜이면 끝.
         for i in range(0, len(texts), 50):
