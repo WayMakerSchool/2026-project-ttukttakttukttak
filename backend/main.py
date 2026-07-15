@@ -124,9 +124,18 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Book Background Music API", lifespan=lifespan)
+# Dev frontend now serves over https (mkcert cert, see frontend/vite.config.ts)
+# so a phone on the LAN can grant camera/mic permission — browsers block
+# getUserMedia on any non-localhost origin served over plain http. Covers
+# both http and https + localhost/127.0.0.1/LAN IP so nothing breaks mid-switch.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "https://localhost:5173",
+        "https://127.0.0.1:5173",
+        "https://192.168.0.188:5173",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
