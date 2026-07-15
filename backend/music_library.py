@@ -383,6 +383,55 @@ def pick_tracks_for_chapters(
     return out
 
 
+def debounce_track_switch(
+    current_id: str | None,
+    pending_id: str | None,
+    pending_count: int,
+    candidate_id: str,
+) -> dict:
+    """Decide whether a freshly-matched track should actually replace the
+    one playing, given the session's pending-switch state. Pure function —
+    the caller persists the returned state back onto the session.
+
+    A single live page-mood detection isn't perfectly repeatable read to
+    read (OCR/interpretation noise) even when the reader hasn't turned the
+    page, so switching on the FIRST different candidate made music flicker
+    between tracks while sitting on one page. Requiring the SAME candidate
+    to win two consecutive detections filters that noise while still
+    reacting to a real page turn within two detection ticks.
+
+    Returns {"current_id", "pending_id", "pending_count", "switched"}."""
+    if candidate_id == current_id:
+        return {
+            "current_id": current_id,
+            "pending_id": None,
+            "pending_count": 0,
+            "switched": False,
+        }
+    if candidate_id == pending_id:
+        count = pending_count + 1
+        if count >= 2:
+            return {
+                "current_id": candidate_id,
+                "pending_id": None,
+                "pending_count": 0,
+                "switched": True,
+            }
+        return {
+            "current_id": current_id,
+            "pending_id": pending_id,
+            "pending_count": count,
+            "switched": False,
+        }
+    # A new, different candidate — start the pending count over.
+    return {
+        "current_id": current_id,
+        "pending_id": candidate_id,
+        "pending_count": 1,
+        "switched": False,
+    }
+
+
 async def nearest_track_for_mood(
     mood_text: str, exclude_id: str | None = None
 ) -> dict | None:

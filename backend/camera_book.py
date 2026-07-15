@@ -1564,7 +1564,13 @@ async def detect_page_mood(image_bytes: bytes) -> dict:
             ],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                temperature=0.2,
+                # 0.0, not 0.2: this same page gets re-read every ~4s while
+                # the reader sits on it. Any temperature >0 meant each read
+                # could land on a slightly different mood/track, which read
+                # as the music randomly flickering even with the page
+                # unchanged. Deterministic sampling + the 2-reads-agree
+                # debounce in main.py together kill that noise.
+                temperature=0.0,
                 # Perception + classify-into-10-buckets task, not multi-step
                 # reasoning — skipping thinking cuts latency substantially
                 # (same lever already used for generate_book_characters, where

@@ -2061,14 +2061,23 @@ async def detect_camera_chapter(
                 query, exclude_id=s.get("current_track_id")
             )
             if track:
-                s["current_track_id"] = track["id"]
                 s["last_mood"] = mood
                 s["audio_status"] = "ready"
-                print(
-                    f"[camera] {session_id} page→track: "
-                    f"{mood.get('mood_ko')} → {track['id']} "
-                    f"({mood.get('evidence','')[:40]})"
+                decision = music_library.debounce_track_switch(
+                    s.get("current_track_id"),
+                    s.get("pending_track_id"),
+                    s.get("pending_track_count", 0),
+                    track["id"],
                 )
+                s["current_track_id"] = decision["current_id"]
+                s["pending_track_id"] = decision["pending_id"]
+                s["pending_track_count"] = decision["pending_count"]
+                if decision["switched"]:
+                    print(
+                        f"[camera] {session_id} page→track: "
+                        f"{mood.get('mood_ko')} → {track['id']} "
+                        f"({mood.get('evidence','')[:40]})"
+                    )
         return {
             "mode": "mood",
             "mood_ko": mood.get("mood_ko", ""),

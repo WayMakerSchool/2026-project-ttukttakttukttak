@@ -174,6 +174,54 @@ def test_ensure_embeddings_skips_reembed_when_tag_matches(monkeypatch):
     assert out[0]["embedding"] == _vec(1.0)  # untouched
 
 
+def test_debounce_confirms_current_track_clears_pending():
+    r = m.debounce_track_switch("calm_00", "anger_01", 1, "calm_00")
+    assert r == {
+        "current_id": "calm_00", "pending_id": None,
+        "pending_count": 0, "switched": False,
+    }
+
+
+def test_debounce_first_different_candidate_does_not_switch():
+    r = m.debounce_track_switch("calm_00", None, 0, "anger_01")
+    assert r["current_id"] == "calm_00"  # unchanged yet
+    assert r["pending_id"] == "anger_01"
+    assert r["pending_count"] == 1
+    assert r["switched"] is False
+
+
+def test_debounce_second_agreeing_candidate_switches():
+    # First tick already set pending=anger_01, count=1 (as above).
+    r = m.debounce_track_switch("calm_00", "anger_01", 1, "anger_01")
+    assert r["current_id"] == "anger_01"
+    assert r["pending_id"] is None
+    assert r["pending_count"] == 0
+    assert r["switched"] is True
+
+
+def test_debounce_a_different_new_candidate_restarts_the_count():
+    # Pending was anger_01 (count=1), but this tick suggests a THIRD track —
+    # noise, not confirmation — so the count restarts on the new candidate
+    # rather than accumulating toward the stale one.
+    r = m.debounce_track_switch("calm_00", "anger_01", 1, "sad_02")
+    assert r["current_id"] == "calm_00"
+    assert r["pending_id"] == "sad_02"
+    assert r["pending_count"] == 1
+    assert r["switched"] is False
+
+
+def test_debounce_single_noisy_read_never_switches_on_its_own():
+    """A page sat on for many ticks, each suggesting a DIFFERENT noisy
+    candidate, must never accidentally accumulate to a switch."""
+    current, pending, count = "calm_00", None, 0
+    noisy_candidates = ["calm_01", "mystery_03", "calm_02", "dreamy_00"]
+    for cand in noisy_candidates:
+        r = m.debounce_track_switch(current, pending, count, cand)
+        assert r["switched"] is False
+        current, pending, count = r["current_id"], r["pending_id"], r["pending_count"]
+    assert current == "calm_00"  # never moved off the original track
+
+
 def test_pick_raises_when_library_empty(monkeypatch):
     _fake_ok(monkeypatch, ids=set())
     try:
