@@ -606,6 +606,10 @@ async def generate_book_toc(
                 temperature=0.2,
                 # Big output budget so 30-chapter TOCs aren't truncated.
                 max_output_tokens=32768,
+                # Recalling a known book's TOC from training knowledge, not
+                # multi-step reasoning — same lever as the other identify()/
+                # format calls, all of which measured much faster with this.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         return json.loads(resp.text or "{}")
@@ -702,17 +706,11 @@ laptop camera. Do EVERYTHING in this single call:
    edition / printing markers (개정증보판, 1판/2판, n쇄, ISBN if visible).
 2) IDENTIFY the book. Use what you read + cover art + your knowledge of
    famous books — even partial reads are enough.
-3) WRITE the table of contents for THIS edition. Use your knowledge of
-   the publisher above (e.g. 민음사 1984 vs 문학동네 1984 have different
-   chapter splits — match the cover).
-
-For each chapter:
-- title: actual printed chapter name in the edition's language.
-- summary: ONE short Korean sentence about what happens.
-- music_prompt: ONE English line for an ambient music model — instruments,
-  mood word, genre, tempo feel. Each chapter MUST differ from the previous.
-- bpm: integer 40-160 matching the chapter's pace.
-- mood: ONE Korean word like "고요", "긴장", "환희", "신비", "슬픔".
+3) LIST just the chapter TITLES for THIS edition (no per-chapter metadata —
+   this is a rough placeholder immediately replaced by an accurate lookup;
+   keeping this call fast matters more than fleshing it out). Use your
+   knowledge of the publisher above (e.g. 민음사 1984 vs 문학동네 1984 have
+   different chapter splits — match the cover).
 
 Skip front-matter (서문, 추천사, 옮긴이의 말) UNLESS the edition treats them
 as numbered chapters. Include prologues and epilogues. 3 or more chapters —
@@ -731,8 +729,7 @@ Return JSON only (no markdown, no prose):
   "evidence": str,
   "matched_edition": str,
   "chapters": [
-    {"idx": int, "title": str, "summary": str, "music_prompt": str,
-     "bpm": int, "mood": str}
+    {"idx": int, "title": str}
   ]
 }
 
@@ -847,6 +844,12 @@ async def _format_scraped_toc(
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0.2,
+                    # Tagging mood/bpm/summary onto an already-fixed chapter
+                    # list — a labeling task, not reasoning. Missing this was
+                    # a real contributor to /camera/identify's TOC-upgrade
+                    # step running much slower than the crawl itself (which
+                    # alone is ~2s) would suggest.
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             raw = json.loads(resp.text or "{}")
@@ -964,6 +967,14 @@ async def identify_book_from_cover(image_bytes: bytes) -> dict:
                 # with all per-chapter fields is ~2-3K tokens. Default cap
                 # truncated longer books mid-array.
                 max_output_tokens=32768,
+                # This is cover recognition + recalling a known book's TOC
+                # from training knowledge, not multi-step reasoning — the
+                # same "skip thinking" lever already used for
+                # generate_book_characters and detect_page_mood (there,
+                # ~18s down to a few seconds). Without it, identify() was
+                # measured at ~33s for this call alone, far past the
+                # "~5-10s" this function's own docstring promises.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         return json.loads(resp.text or "{}")
@@ -1132,6 +1143,8 @@ async def extract_toc_from_photo(image_bytes: bytes, book_name: str = "") -> dic
                 temperature=0.1,
                 # Dense TOCs (40+ entries with annotations) need headroom.
                 max_output_tokens=32768,
+                # OCR/transcription, not reasoning.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         return json.loads(resp.text or "{}")
@@ -1204,6 +1217,7 @@ async def _verify_toc_from_photo(
             response_mime_type="application/json",
             temperature=0.0,
             max_output_tokens=16384,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         ),
     )
     raw = json.loads(resp.text or "{}")
@@ -1639,6 +1653,9 @@ async def detect_chapter_from_image(
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.1,
+                # Transcribing a heading/running-header, not reasoning —
+                # index matching happens in pure Python (resolve_detection).
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
         raw = json.loads(resp.text or "{}")

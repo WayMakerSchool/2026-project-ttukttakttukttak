@@ -1598,6 +1598,7 @@ async def _best_toc_for_book(
     translator: str = "",
     edition: str = "",
     isbn: str = "",
+    crawl_timeout: float = 20.0,
 ) -> dict:
     """Best TOC we can get for a book: race the verbatim scrapers (Aladin API +
     Yes24) against an LLM recall and return the winner.
@@ -1606,7 +1607,16 @@ async def _best_toc_for_book(
     same COMPLETE result. The cover-vision inline TOC is a coarse recall (e.g.
     21 vs the printed 34 chapters), so identify upgrades through here — now that
     audio is instant (pre-generated library) there's no reason to lock in the
-    short list. Returns {toc, matched_edition, toc_error, source, verbatim}."""
+    short list.
+
+    `crawl_timeout` bounds how long we wait for the crawler before falling
+    back to the LLM. /camera/toc-lookup is an explicit user action (they
+    clicked "다시 가져오기" and expect to wait for accuracy) so it keeps the
+    full 20s. /camera/identify fires automatically right after a cover snap,
+    where users expect a quick reaction — it passes a much shorter budget so
+    a slow crawl can't stack on top of the vision call's own latency.
+
+    Returns {toc, matched_edition, toc_error, source, verbatim}."""
 
     async def _do_crawl():
         aladin_res, yes24_res = await asyncio.gather(
@@ -1645,7 +1655,7 @@ async def _best_toc_for_book(
     crawl_task = asyncio.create_task(_do_crawl())
     llm_task = asyncio.create_task(_do_llm())
     try:
-        crawl_done, _ = await asyncio.wait({crawl_task}, timeout=20.0)
+        crawl_done, _ = await asyncio.wait({crawl_task}, timeout=crawl_timeout)
         if crawl_task in crawl_done and not crawl_task.exception():
             crawler_result = crawl_task.result()
             if crawler_result:
@@ -1707,11 +1717,13 @@ async def identify_camera_cover(
     except Exception as exc:
         raise _camera_gemini_http_error(exc, "표지 인식 실패")
 
-    # Single vision call returned chapters inline — no second TOC roundtrip.
-    # The vision call's inline TOC is a COARSE recall (e.g. 21 vs the printed
-    # 34). Upgrade to the real printed TOC right here so the user never locks
-    # in the short list by starting a session before a background fetch lands.
-    # Audio is instant now (pre-generated library), so the extra ~10s is fine.
+    # Single vision call returned chapters inline (titles only — see
+    # COVER_PROMPT) — no second TOC roundtrip needed for the user to see
+    # SOMETHING immediately. The inline TOC is still a coarse recall, so
+    # upgrade to the real printed TOC right here, before the user can lock in
+    # the short list by starting a session before a background fetch lands.
+    # Measured end-to-end (cover ID + crawl + format, thinking disabled on
+    # all three): ~14-15s typical, vs ~31-35s before those fixes.
     vision_toc = cover.get("chapters", []) or []
     matched_edition = cover.get("matched_edition", "")
     toc_source = "vision"
