@@ -30,7 +30,13 @@ LIBRARY_JSON = LIBRARY_ROOT / "library.json"
 TRACK_DURATION_S = 20
 
 # 임베딩 설정. gemini-embedding-001 @ 768차원 — 100트랙 JSON ≈ 1.5MB.
-EMBED_MODEL = "gemini-embedding-001"
+# gemini-embedding-2 measured ~16% faster on average AND far more consistent
+# tail latency than gemini-embedding-001 (0.84s worst-case → 0.43s worst-case
+# across repeated calls) — matters for the live per-page detect loop. NOTE:
+# embeddings from different models live in different vector spaces and are
+# NOT comparable, so switching this requires re-embedding every cached track
+# (see `python music_library.py reembed`).
+EMBED_MODEL = "gemini-embedding-2"
 EMBED_DIM = 768
 
 # ── 무드 택소노미: 10 카테고리 × 10 변주 = 100 트랙 ──────────────────────
@@ -199,9 +205,25 @@ def load_library() -> list[dict]:
     return _catalog()
 
 
-def save_library(tracks: list[dict]) -> None:
+def _stored_embed_model() -> str | None:
+    """Which embedding model the CACHED vectors in library.json were built
+    with — None if the file doesn't exist or predates this field."""
+    if not LIBRARY_JSON.exists():
+        return None
+    try:
+        data = json.loads(LIBRARY_JSON.read_text())
+        return data.get("embed_model") if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def save_library(tracks: list[dict], embed_model: str | None = None) -> None:
     LIBRARY_JSON.write_text(
-        json.dumps({"tracks": tracks}, ensure_ascii=False), encoding="utf-8"
+        json.dumps(
+            {"tracks": tracks, "embed_model": embed_model or _stored_embed_model()},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
     )
 
 
@@ -247,45 +269,72 @@ def _get_embed_client():
 
 
 async def _embed_texts(texts: list[str]) -> list[list[float]] | None:
-    """배치 임베딩. 실패 시 None (호출측은 무드 문자열 폴백 사용)."""
-    try:
-        from google.genai import types as gtypes
+    """Embed each text with its OWN API call (parallelized, capped).
 
-        if not texts:
-            return None
-        client = _get_embed_client()
-        if client is None:
-            return None
-        vecs: list[list[float]] = []
-        # 배치 한도(100) 여유를 두고 50개씩 청킹 — 100트랙 인덱싱도 2콜이면 끝.
-        for i in range(0, len(texts), 50):
-            chunk = texts[i : i + 50]
-            resp = await asyncio.to_thread(
-                client.models.embed_content,
-                model=EMBED_MODEL,
-                contents=chunk,
-                config=gtypes.EmbedContentConfig(output_dimensionality=EMBED_DIM),
-            )
-            got = [list(e.values) for e in (resp.embeddings or [])]
-            if len(got) != len(chunk):
-                return None
-            vecs.extend(got)
-        return vecs if len(vecs) == len(texts) else None
-    except Exception as exc:
-        print(f"[music_library] embed failed: {exc!r}")
+    gemini-embedding-001 accepted a multi-string `contents` batch and returned
+    one vector per string. gemini-embedding-2 silently returns only ONE
+    embedding for a multi-string batch (a real, undocumented behavior
+    difference verified live — batching 100 texts returned len(embeddings)==1,
+    which the old code's length-check correctly caught but then failed
+    SILENTLY with no error, since no exception was raised). One-call-per-text
+    sidesteps that model-specific quirk entirely and works for both models."""
+    if not texts:
         return None
+    client = _get_embed_client()
+    if client is None:
+        return None
+    from google.genai import types as gtypes
+
+    sem = asyncio.Semaphore(8)  # bound concurrent requests
+
+    async def _one(text: str) -> list[float] | None:
+        async with sem:
+            try:
+                resp = await asyncio.to_thread(
+                    client.models.embed_content,
+                    model=EMBED_MODEL,
+                    contents=[text],  # single-item list — verified working format
+                    config=gtypes.EmbedContentConfig(output_dimensionality=EMBED_DIM),
+                )
+                embs = resp.embeddings or []
+                return list(embs[0].values) if embs else None
+            except Exception as exc:
+                print(f"[music_library] embed failed for one text: {exc!r}")
+                return None
+
+    results = await asyncio.gather(*(_one(t) for t in texts))
+    if any(v is None for v in results):
+        return None
+    return results  # type: ignore[return-value]
 
 
 async def ensure_embeddings() -> list[dict]:
-    """모든 트랙에 임베딩 벡터를 붙여 library.json에 캐시(1회 비용)."""
+    """모든 트랙에 임베딩 벡터를 붙여 library.json에 캐시(1회 비용).
+
+    다른 모델로 만든 임베딩은 벡터 공간이 달라 코사인 유사도가 무의미해진다
+    — 캐시된 임베딩이 현재 EMBED_MODEL과 다른 모델로 만들어졌으면 전부 무시
+    하고 다시 임베딩한다(모델 교체 시 수동 재빌드를 잊어도 안전)."""
     tracks = load_library()
+    # A missing tag (None) does NOT mean "safe" — it means these vectors were
+    # cached before model-tracking existed, i.e. under the OLD model. Only a
+    # library with NO embeddings at all is exempt (first-ever build, nothing
+    # to invalidate).
+    has_any_embedding = any(t.get("embedding") for t in tracks)
+    stale = has_any_embedding and _stored_embed_model() != EMBED_MODEL
+    if stale:
+        print(
+            f"[music_library] embedding model changed ({_stored_embed_model()} → "
+            f"{EMBED_MODEL}) — re-embedding all {len(tracks)} tracks"
+        )
+        for t in tracks:
+            t.pop("embedding", None)
     missing = [t for t in tracks if not t.get("embedding")]
     if missing:
         vecs = await _embed_texts([_track_text(t) for t in missing])
         if vecs:
             for t, v in zip(missing, vecs):
                 t["embedding"] = v
-            save_library(tracks)
+            save_library(tracks, embed_model=EMBED_MODEL)
             print(f"[music_library] embedded {len(missing)} tracks")
     return tracks
 

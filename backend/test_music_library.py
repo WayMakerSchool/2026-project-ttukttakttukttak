@@ -98,7 +98,8 @@ def test_nearest_track_for_mood_picks_closest(monkeypatch):
         {"id": "calm_00", "mood_ko": "고요", "bpm": 60, "embedding": _vec(0.0, 1.0)},
     ]
     monkeypatch.setattr(m, "load_library", lambda: tracks)
-    monkeypatch.setattr(m, "save_library", lambda t: None)
+    monkeypatch.setattr(m, "save_library", lambda t, **kw: None)
+    monkeypatch.setattr(m, "_stored_embed_model", lambda: m.EMBED_MODEL)
     _fake_ok(monkeypatch)
 
     async def fake_embed(texts):  # query vector leans toward the calm axis
@@ -118,7 +119,8 @@ def test_nearest_track_for_mood_hysteresis_keeps_current(monkeypatch):
         {"id": "calm_01", "mood_ko": "고요", "bpm": 62, "embedding": _vec(0.999, 0.01)},
     ]
     monkeypatch.setattr(m, "load_library", lambda: tracks)
-    monkeypatch.setattr(m, "save_library", lambda t: None)
+    monkeypatch.setattr(m, "save_library", lambda t, **kw: None)
+    monkeypatch.setattr(m, "_stored_embed_model", lambda: m.EMBED_MODEL)
     _fake_ok(monkeypatch)
 
     async def fake_embed(texts):
@@ -128,6 +130,48 @@ def test_nearest_track_for_mood_hysteresis_keeps_current(monkeypatch):
     # calm_01 is currently playing; calm_00 is only marginally better → hold.
     t = asyncio.run(m.nearest_track_for_mood("고요", exclude_id="calm_01"))
     assert t["id"] == "calm_01"
+
+
+def test_ensure_embeddings_reembeds_when_model_tag_missing(monkeypatch):
+    """Regression: a library.json saved before model-tracking existed has
+    embeddings but NO 'embed_model' tag. That must NOT be treated as
+    'already on the current model' — those vectors are from whatever model
+    was in use when they were cached, so silently trusting them would compare
+    cosine similarity across two different vector spaces (meaningless)."""
+    import asyncio
+
+    tracks = [
+        {"id": "sad_00", "mood_ko": "슬픔", "mood_en": "x", "prompt": "x",
+         "bpm": 60, "embedding": _vec(1.0)},  # stale vector, no tag on disk
+    ]
+    monkeypatch.setattr(m, "load_library", lambda: tracks)
+    monkeypatch.setattr(m, "_stored_embed_model", lambda: None)
+    saved = {}
+    monkeypatch.setattr(
+        m, "save_library", lambda t, **kw: saved.update(tracks=t, **kw)
+    )
+
+    async def fake_embed(texts):
+        return [_vec(9.9) for _ in texts]
+
+    monkeypatch.setattr(m, "_embed_texts", fake_embed)
+    out = asyncio.run(m.ensure_embeddings())
+    assert out[0]["embedding"] == _vec(9.9)  # re-embedded, not the stale vector
+    assert saved.get("embed_model") == m.EMBED_MODEL
+
+
+def test_ensure_embeddings_skips_reembed_when_tag_matches(monkeypatch):
+    """No wasted API calls when the cache is already on the current model."""
+    import asyncio
+
+    tracks = [{"id": "sad_00", "mood_ko": "슬픔", "bpm": 60, "embedding": _vec(1.0)}]
+    monkeypatch.setattr(m, "load_library", lambda: tracks)
+    monkeypatch.setattr(m, "_stored_embed_model", lambda: m.EMBED_MODEL)
+    calls = []
+    monkeypatch.setattr(m, "_embed_texts", lambda texts: calls.append(texts) or [])
+    out = asyncio.run(m.ensure_embeddings())
+    assert calls == []  # never called — nothing missing, nothing stale
+    assert out[0]["embedding"] == _vec(1.0)  # untouched
 
 
 def test_pick_raises_when_library_empty(monkeypatch):
