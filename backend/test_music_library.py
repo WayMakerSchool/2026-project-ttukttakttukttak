@@ -19,11 +19,14 @@ def _vec(*head):
     return v
 
 
-def test_catalog_has_100_tracks_10_moods():
-    cat = m.load_library()
-    assert len(cat) == 100
-    assert len({t["mood_ko"] for t in cat}) == 10
-    assert len({t["id"] for t in cat}) == 100  # unique ids
+def test_catalog_has_250_tracks_25_moods():
+    # _catalog() is the pure code-defined catalog — test it directly rather
+    # than load_library() (which returns whatever's cached on disk, possibly
+    # a stale subset before sync_catalog()/build have run).
+    cat = m._catalog()
+    assert len(cat) == 250
+    assert len({t["mood_ko"] for t in cat}) == 25
+    assert len({t["id"] for t in cat}) == 250  # unique ids
 
 
 def test_cos_basic():
@@ -172,6 +175,35 @@ def test_ensure_embeddings_skips_reembed_when_tag_matches(monkeypatch):
     out = asyncio.run(m.ensure_embeddings())
     assert calls == []  # never called — nothing missing, nothing stale
     assert out[0]["embedding"] == _vec(1.0)  # untouched
+
+
+def test_sync_catalog_preserves_existing_and_adds_new(monkeypatch):
+    # Simulate an on-disk library that only has the OLD 100-track catalog,
+    # with sad_00 already built+embedded — sync must keep it untouched and
+    # append every track _catalog() defines that isn't there yet.
+    old_sad_00 = {"id": "sad_00", "mood_ko": "슬픔", "mood_en": "sad",
+                  "prompt": "OLD PROMPT — must survive sync", "bpm": 999,
+                  "embedding": [1.0, 2.0]}
+    monkeypatch.setattr(m, "load_library", lambda: [old_sad_00])
+    saved = {}
+    monkeypatch.setattr(m, "save_library", lambda t, **kw: saved.setdefault("tracks", t))
+    merged = m.sync_catalog()
+    assert len(merged) == len(m._catalog())  # every catalog id present exactly once
+    by_id = {t["id"]: t for t in merged}
+    assert by_id["sad_00"] is old_sad_00  # untouched, embedding preserved
+    assert "excitement_00" in by_id  # a new-mood track got appended
+    assert "embedding" not in by_id["excitement_00"]  # new track has no embedding yet
+    assert saved["tracks"] == merged  # persisted
+
+
+def test_sync_catalog_is_noop_when_already_in_sync(monkeypatch):
+    full = m._catalog()
+    monkeypatch.setattr(m, "load_library", lambda: full)
+    saves = []
+    monkeypatch.setattr(m, "save_library", lambda t, **kw: saves.append(t))
+    merged = m.sync_catalog()
+    assert merged == full
+    assert saves == []  # nothing new to add → no write
 
 
 def test_debounce_confirms_current_track_clears_pending():

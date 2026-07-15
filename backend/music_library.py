@@ -164,6 +164,189 @@ _VARIANTS: dict[str, tuple[str, list[str], tuple[int, int]]] = {
         "slow doom guitar and tolling bell, last light gone",
         "whispered voices over static, nightmare edge",
     ], (50, 80)),
+    # ── 2026-07-15 확장: +15 무드 × 10 변주 = +150곡 (기존 10과 겹치지
+    # 않는 감정을 골라 커버리지 확대: 설렘/로맨스/공포/절망/유머/경외/
+    # 치유/활력/애수/광기/고독/결의/유혹/축제/초조).
+    "excitement": ("설렘", [
+        "light plucked strings and glockenspiel, heart skipping a beat",
+        "bright arpeggiated synths, breathless anticipation building",
+        "playful pizzicato and soft claps, butterflies before the moment",
+        "shimmering guitar harmonics, first-date nervous joy",
+        "rising piano runs with airy pads, can't-wait excitement",
+        "bouncy ukulele and bells, giddy anticipation",
+        "sparkling marimba over soft beat, waiting for the surprise",
+        "warm synth pop pulse, adrenaline of a new beginning",
+        "quick violin pizzicato, racing heartbeat before the reveal",
+        "bright celeste and light percussion, eager and hopeful",
+    ], (100, 130)),
+    "romance": ("로맨스", [
+        "warm solo piano and strings, intimate candlelit duet",
+        "slow saxophone ballad, close and tender",
+        "soft acoustic guitar and cello, quiet love confession",
+        "gentle rhodes piano chords, warm evening embrace",
+        "waltzing strings, slow dance under soft light",
+        "breathy flute over warm pads, first kiss hesitation",
+        "mellow jazz trio, late night two glasses of wine",
+        "tender harp and violin duet, promise whispered close",
+        "slow guitar fingerstyle, hand in hand walking home",
+        "lush string swell, love letter read aloud",
+    ], (65, 95)),
+    "horror": ("공포", [
+        "sudden dissonant string stab, something behind you",
+        "creaking floorboards and detuned piano, closet door ajar",
+        "screeching violin cluster, jump-scare tension snapping",
+        "warped music box loop, wrong smile in the mirror",
+        "guttural drone with scratching textures, breath on your neck",
+        "distorted whispers and sub-bass rumble, basement stairs down",
+        "shrieking strings tremolo, chase through dark halls",
+        "sparse prepared-piano clangs, footsteps that aren't yours",
+        "unsettling children's choir out of tune, doll's eyes open",
+        "metallic screech and silence, the power just went out",
+    ], (55, 100)),
+    "despair": ("절망", [
+        "hollow piano chords, nothing left to hold onto",
+        "collapsing string drone, the weight of giving up",
+        "distant funeral bell over silence, all hope gone",
+        "slow crumbling synth pad, drowning quietly",
+        "bare cello note held too long, empty room, empty hands",
+        "muffled sobbing strings, curled up on the floor",
+        "flatline drone with faint heartbeat fading, the end of trying",
+        "grey ambient wash, no color left in the world",
+        "single detuned piano key repeating, can't get up today",
+        "slow dirge strings, the letter that never arrived",
+    ], (45, 65)),
+    "humor": ("유머", [
+        "bouncy pizzicato strings and kazoo-like woodwind, comic mischief",
+        "silly muted trumpet slides, cartoon slip-on-a-banana-peel",
+        "plucky ukulele and washboard, goofy sitcom entrance",
+        "wobbly bassoon runs, absurd punchline landing",
+        "playful xylophone skips, tiptoeing past the boss",
+        "quirky pizzicato waltz, awkward wink to camera",
+        "bright kazoo and handclaps, slapstick chase scene",
+        "cheeky clarinet trills, sneaky prank in progress",
+        "bouncy toy piano, ridiculous plan unfolding",
+        "comic tuba oompah, pratfall recovery bow",
+    ], (100, 140)),
+    "awe": ("경외", [
+        "vast choir pads over deep drone, standing before a canyon",
+        "slow orchestral swell with distant horns, first sight of the ocean",
+        "shimmering high strings and bells, staring into the night sky",
+        "massive organ chord bloom, cathedral ceiling overhead",
+        "expansive synth pads and soft timpani, mountain peak at dawn",
+        "ethereal choir over sub-bass, the scale of the universe",
+        "slow crescendo brass and strings, witnessing something sacred",
+        "wide reverb piano chords, silence after the miracle",
+        "cosmic pad drone with faint chimes, galaxies turning slowly",
+        "soaring string unison, humbled by something greater",
+    ], (55, 85)),
+    "healing": ("치유", [
+        "warm felt piano, gentle exhale after a long cry",
+        "soft acoustic guitar and hum, being taken care of",
+        "slow strings swelling kindly, someone holding your hand",
+        "warm rhodes chords and soft pad, permission to rest",
+        "gentle harp glissando, a bandage placed with care",
+        "tender cello line, the worst part is over now",
+        "soft music box over warm drone, tucked in and safe",
+        "slow breathing pads and light chimes, morning after the storm",
+        "warm acoustic fingerpicking, someone made you tea",
+        "gentle strings and soft piano, it's okay to heal slowly",
+    ], (55, 75)),
+    "power": ("활력", [
+        "driving rock drums and electric guitar riff, unstoppable momentum",
+        "pounding taiko and brass stabs, marching forward without doubt",
+        "pulsing synth bass and hard-hitting drums, full send energy",
+        "galloping strings ostinato, charging ahead at full speed",
+        "heavy electronic beat with rising synth stack, breaking limits",
+        "anthemic drums and power chords, second wind kicking in",
+        "relentless four-on-the-floor kick, training montage grit",
+        "aggressive brass hits over driving bass, no more excuses",
+        "hard trap drums and distorted synth lead, peak performance mode",
+        "propulsive orchestral hybrid, running through the wall",
+    ], (120, 150)),
+    "wistful": ("애수", [
+        "bittersweet piano melody, smiling through the sadness",
+        "soft violin over warm tape hiss, a memory you can't quite hold",
+        "slow accordion, the last day of summer",
+        "gentle acoustic guitar, wishing you'd said one more thing",
+        "faded music box waltz, the room after they left",
+        "mellow clarinet line, remembering a version of yourself",
+        "soft strings and distant piano, half a smile at an old photo",
+        "slow oboe melody, the sweetness that also aches",
+        "warm but fading synth pad, time passing gently anyway",
+        "quiet guitar fingerstyle, goodbye you never really finished",
+    ], (55, 80)),
+    "chaos": ("광기", [
+        "frantic strings sawing wildly, thoughts spiraling out of control",
+        "glitching distorted synths, everything happening at once",
+        "erratic prepared piano hits, laughing at the wrong moment",
+        "spinning circus waltz gone wrong, carnival unraveling",
+        "chaotic breakbeat with screeching samples, mind on fire",
+        "unhinged violin runs, breaking apart at the seams",
+        "manic marimba cascade, too many voices talking",
+        "distorted carnival organ, the room is spinning now",
+        "frenetic drum fills and dissonant brass, losing the thread entirely",
+        "wild theremin wail over chaotic percussion, reality slipping",
+    ], (130, 170)),
+    "loneliness": ("고독", [
+        "single piano note in a large empty room, echo and silence",
+        "sparse guitar picking, one chair at an empty table",
+        "distant cello over long silence, city lights through a window alone",
+        "faint pad drone, the phone that never rings",
+        "isolated music box notes far apart, walking home in the rain solo",
+        "hollow ambient wash, an apartment too quiet",
+        "single flute line unaccompanied, waiting for someone who won't come",
+        "sparse felt piano with long pauses, three a.m. and awake",
+        "distant train horn over drone, watching everyone leave",
+        "muted strings alone in reverb, the last one at the party",
+    ], (50, 75)),
+    "resolve": ("결의", [
+        "steady low strings ostinato, quiet unshakeable determination",
+        "measured piano chords building, deciding to stand and fight",
+        "low brass drone with a slow marching pulse, one foot after another",
+        "controlled taiko heartbeat, gathering courage before the door",
+        "restrained cello line over quiet drums, this ends today",
+        "deliberate guitar chords, no turning back now",
+        "steady synth pulse and low strings, calm before the decision",
+        "measured orchestral build, resolve hardening like steel",
+        "quiet but firm piano octaves, walking toward what scares you",
+        "grounded low drone with a single held note, I will not break",
+    ], (70, 100)),
+    "temptation": ("유혹", [
+        "sultry saxophone over slow bass, a look across the room",
+        "slinky muted trumpet, smoke and low light",
+        "smooth electric piano groove, dangerous and irresistible",
+        "slow sensual strings with a walking bassline, closer than you should be",
+        "breathy flute over a slow beat, the offer you shouldn't take",
+        "velvet guitar licks and soft brushes, one more drink, one more minute",
+        "low synth pulse and sultry strings, the edge of a bad decision",
+        "smoky lounge piano, eyes meeting across the bar",
+        "seductive bassline and muted horns, whispered invitation",
+        "slow sultry groove with vinyl warmth, hard to say no",
+    ], (70, 100)),
+    "festival": ("축제", [
+        "festival drumline and brass band, confetti in the air",
+        "lively accordion and clapping crowd, street parade energy",
+        "upbeat brass fanfare and tambourine, everyone dancing together",
+        "bright marimba and steel drums, carnival lights and laughter",
+        "driving folk fiddle reel, whole village celebrating",
+        "big band swing horns, dance floor packed and joyful",
+        "festive taiko and flute, fireworks over the town square",
+        "energetic mariachi-style trumpets, fiesta in full swing",
+        "bouncy polka accordion, communal toast and cheer",
+        "jubilant gospel choir and clapping, harvest festival joy",
+    ], (110, 150)),
+    "anxiety": ("초조", [
+        "jittery hi-hat pattern and nervous pizzicato, checking the clock again",
+        "restless piano repetition, waiting for the results",
+        "uneasy synth pulse with irregular accents, can't sit still",
+        "fidgety string tremolo, rehearsing what to say",
+        "nervous clarinet flutter over tense bass, running late",
+        "shaky guitar strum pattern, second-guessing every choice",
+        "quick shallow breaths in the rhythm, hovering over send",
+        "twitchy electronic blips and thin strings, overthinking it all",
+        "unsettled woodwind runs, the interview starts in five minutes",
+        "restless snare rolls and tense pads, waiting for the phone to buzz",
+    ], (90, 130)),
 }
 
 
@@ -225,6 +408,28 @@ def save_library(tracks: list[dict], embed_model: str | None = None) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def sync_catalog() -> list[dict]:
+    """Merge the code-defined _VARIANTS catalog into the on-disk library.json,
+    additively: any track ID already in the file (built, embedded, or not) is
+    kept AS-IS; any new ID (from newly added moods/variants) is appended with
+    no embedding yet. Never removes or overwrites an existing entry — safe to
+    call every time before building/embedding."""
+    existing = {t["id"]: t for t in load_library()}
+    fresh = _catalog()
+    merged: list[dict] = []
+    added = 0
+    for t in fresh:
+        if t["id"] in existing:
+            merged.append(existing[t["id"]])
+        else:
+            merged.append(t)
+            added += 1
+    if added:
+        save_library(merged)
+        print(f"[music_library] catalog synced: +{added} new tracks (total {len(merged)})")
+    return merged
 
 
 def library_ready(min_tracks: int = 30) -> bool:
@@ -476,8 +681,8 @@ async def assign_tracks(chapters: list[dict]) -> list[dict]:
 
 # ── 빌드 (1회, 재개 가능) ─────────────────────────────────────────────────
 
-async def build_library(concurrency: int = 2) -> None:
-    tracks = load_library()
+async def build_library(concurrency: int = 3) -> None:
+    tracks = sync_catalog()
     todo = [t for t in tracks if not _track_ok(t["id"])]
     print(f"[music_library] {len(tracks) - len(todo)}/{len(tracks)} ready, "
           f"building {len(todo)} tracks...")

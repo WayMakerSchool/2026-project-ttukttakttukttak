@@ -1534,8 +1534,10 @@ Return JSON only:
                     // instruments + emotion + tempo feel, e.g.
                     // "tense midnight chase, cold strings, fast pulse" or
                     // "warm nostalgic reunion, soft piano, slow".
-  "mood_ko": str,   // ONE Korean mood word: 슬픔/분노/기쁨/고요/긴장/신비/
-                    //   환희/그리움/몽환/어둠 중 가장 가까운 것.
+  "mood_ko": str,   // ONE Korean mood word, whichever is closest:
+                    //   슬픔/분노/기쁨/고요/긴장/신비/환희/그리움/몽환/어둠/
+                    //   설렘/로맨스/공포/절망/유머/경외/치유/활력/애수/
+                    //   광기/고독/결의/유혹/축제/초조
   "bpm": int,       // 40-160 tempo feel for this page.
   "evidence": str   // ONE short Korean sentence citing a SPECIFIC fact/quote/
                     //   detail actually printed on the page (see rules above).
