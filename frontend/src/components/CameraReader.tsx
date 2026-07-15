@@ -589,6 +589,13 @@ export function CameraReader({ onBack }: Props) {
     if (musicOn) return;
     setError(null);
     const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+    // Browsers (especially mobile Safari) create AudioContext in a
+    // "suspended" state and never auto-resume it. Without an explicit
+    // resume(), everything downstream keeps working silently — WS connects,
+    // PCM chunks arrive, buffer sources get scheduled — but nothing is
+    // audible. Must be called synchronously inside this click handler so it
+    // still counts as a user gesture.
+    ctx.resume().catch(() => {});
     const gain = ctx.createGain();
     gain.gain.value = volume;
     gain.connect(ctx.destination);
@@ -639,6 +646,9 @@ export function CameraReader({ onBack }: Props) {
         }
         return;
       }
+      // Safety net: if the initial resume() above got deferred/ignored (some
+      // browsers only honor resume() tied tightly to the click), retry here.
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
       const pcm = new Int16Array(ev.data as ArrayBuffer);
       const frames = Math.floor(pcm.length / CHANNELS);
       if (frames === 0) return;
