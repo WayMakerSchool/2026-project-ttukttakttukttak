@@ -3,7 +3,9 @@
 The user types a book NAME (no PDF). We ask Gemini to generate a TOC plus
 per-chapter mood/music prompts from that name. Lyria captures a short PCM
 segment for each chapter. A physical XIAO ESP32 camera (running on a
-separate Node server, default http://192.168.0.188:4000) snaps the page
+separate Node server, default http://192.168.0.11:4000 — this is the Mac's
+LAN IP and WILL change if DHCP reassigns it; update CAMERA_SERVER_URL (or
+this default) when that happens) snaps the page
 the reader is on; we hand the image to Gemini Vision with the TOC and ask
 "which chapter does this photo show?" The matching chapter's PCM segment
 becomes the active stream over the /ws/camera/{session_id} WebSocket.
@@ -30,7 +32,7 @@ from PIL import Image, ImageFilter, ImageOps, ImageStat
 from audio_cache import BYTES_PER_SECOND, SEGMENT_DURATION_S, capture_lyria_pcm
 
 CAMERA_SERVER_URL = os.environ.get(
-    "CAMERA_SERVER_URL", "http://192.168.0.188:4000"
+    "CAMERA_SERVER_URL", "http://192.168.0.11:4000"
 ).rstrip("/")
 
 CAMERA_AUDIO_ROOT = Path(__file__).parent / "storage" / "camera_audio"

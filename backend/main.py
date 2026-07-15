@@ -133,7 +133,8 @@ app.add_middleware(
     allow_origins=[
         "https://localhost:5173",
         "https://127.0.0.1:5173",
-        "https://192.168.0.188:5173",
+        "https://192.168.0.11:5173",   # Mac LAN IP (DHCP — changes sometimes)
+        "https://192.168.0.188:5173",  # previous LAN IP, kept for safety
         "http://localhost:5173",
     ],
     allow_credentials=True,
