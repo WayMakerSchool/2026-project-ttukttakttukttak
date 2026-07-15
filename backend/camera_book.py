@@ -1507,8 +1507,26 @@ def decide_chapter(
 MOOD_PROMPT = """You are choosing background music for someone reading a
 physical book. The camera shows the page they are on RIGHT NOW.
 
-Read whatever text/scene is visible and capture its EMOTIONAL MOOD — not the
-chapter, the FEELING of this moment in the story.
+The book may be NARRATIVE (a novel — scenes, characters, dialogue) or
+EXPOSITORY/INFORMATIONAL (history, science, a manual — facts, names, dates,
+numbers, arguments). Read the actual printed text closely either way and base
+the mood on its content and tone — for narrative, the feeling of the scene;
+for expository text, the tone of what's being conveyed (e.g. a triumphant
+milestone, a sobering statistic, a tense conflict, a dry technical passage).
+
+CRITICAL — evidence must prove you actually read this specific page, not just
+recognized its general subject:
+- GOOD: quote or name something concrete that is printed there — a specific
+  fact, figure, date, proper noun, quote, or claim.
+  e.g. "1976년 포니 출시로 국산화율 90%를 달성했다는 내용",
+       "주인공이 어둠 속에서 형사에게 쫓기는 장면".
+- BAD — never write a generic label for what TYPE of content this is without
+  citing anything specific: "이 페이지는 자동차 산업의 역사를 설명하고
+  있습니다" or "정보 전달 중심의 내용입니다" are USELESS — they don't name
+  a single fact from the page and could describe any page in the book.
+- If dense text makes a single fact hard to pick out, quote the page's own
+  heading/subheading or the first concrete noun phrase you can read — still
+  better than a content-type label.
 
 Return JSON only:
 {
@@ -1519,8 +1537,8 @@ Return JSON only:
   "mood_ko": str,   // ONE Korean mood word: 슬픔/분노/기쁨/고요/긴장/신비/
                     //   환희/그리움/몽환/어둠 중 가장 가까운 것.
   "bpm": int,       // 40-160 tempo feel for this page.
-  "evidence": str   // ONE short Korean sentence quoting/paraphrasing what you
-                    //   read, e.g. "주인공이 어둠 속에서 쫓기는 장면".
+  "evidence": str   // ONE short Korean sentence citing a SPECIFIC fact/quote/
+                    //   detail actually printed on the page (see rules above).
 }
 
 If the image is blank, too blurry, or NOT a book page (a hand, a wall, a phone
