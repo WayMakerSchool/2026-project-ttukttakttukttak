@@ -118,8 +118,36 @@ export function CameraReader({ onBack }: Props) {
   const ctxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const nextStartRef = useRef(0);
+  // Every scheduled-but-not-yet-finished buffer source, each behind its own
+  // gain node — lets a track switch fade THAT track out without touching the
+  // shared master volume (which the incoming track also uses).
+  const activeSourcesRef = useRef<{ src: AudioBufferSourceNode; gain: GainNode }[]>([]);
   const pollRef = useRef<number | null>(null);
   const autoTimerRef = useRef<number | null>(null);
+
+  // Fade out and stop every currently-scheduled buffer source (the OLD
+  // track), then reset the scheduling clock so the NEW track's chunks start
+  // from "now" instead of queuing up behind leftover audio. Without this, a
+  // track switch left the old track's already-queued seconds of audio
+  // playing out WHILE the new track's chunks also started — two songs at
+  // once.
+  function stopActiveSources() {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    for (const { src, gain } of activeSourcesRef.current) {
+      try {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.05); // quick fade, no pop
+        src.stop(now + 0.06);
+      } catch {
+        /* already stopped/ended */
+      }
+    }
+    activeSourcesRef.current = [];
+    nextStartRef.current = now;
+  }
 
   function teardownAudio() {
     if (wsRef.current) {
@@ -135,6 +163,7 @@ export function CameraReader({ onBack }: Props) {
       ctxRef.current = null;
     }
     gainRef.current = null;
+    activeSourcesRef.current = [];
     nextStartRef.current = 0;
     setMusicOn(false);
   }
@@ -640,6 +669,10 @@ export function CameraReader({ onBack }: Props) {
             );
           } else if (msg.type === "chapter" || msg.type === "track") {
             setAudioStatusLog("");
+            // Cut off whatever was still queued from the previous track —
+            // otherwise its already-scheduled tail plays out on top of this
+            // new track's incoming chunks.
+            stopActiveSources();
           }
         } catch {
           /* */
@@ -661,7 +694,17 @@ export function CameraReader({ onBack }: Props) {
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      src.connect(gain);
+      // Per-chunk gain node so a track switch can fade OUT just this chunk's
+      // remaining tail (stopActiveSources) without touching the shared
+      // master `gain` node the incoming track also plays through.
+      const chunkGain = ctx.createGain();
+      src.connect(chunkGain);
+      chunkGain.connect(gain);
+      const entry = { src, gain: chunkGain };
+      activeSourcesRef.current.push(entry);
+      src.onended = () => {
+        activeSourcesRef.current = activeSourcesRef.current.filter((e) => e !== entry);
+      };
       const startAt = Math.max(ctx.currentTime, nextStartRef.current);
       src.start(startAt);
       nextStartRef.current = startAt + buf.duration;
