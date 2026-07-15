@@ -177,6 +177,19 @@ def test_ensure_embeddings_skips_reembed_when_tag_matches(monkeypatch):
     assert out[0]["embedding"] == _vec(1.0)  # untouched
 
 
+def test_track_by_id_finds_and_returns_canonical_entry(monkeypatch):
+    tracks = [{"id": "calm_00", "mood_ko": "고요", "bpm": 61}]
+    monkeypatch.setattr(m, "load_library", lambda: tracks)
+    assert m.track_by_id("calm_00") == tracks[0]
+
+
+def test_track_by_id_none_for_missing_or_empty(monkeypatch):
+    monkeypatch.setattr(m, "load_library", lambda: [{"id": "calm_00", "bpm": 61}])
+    assert m.track_by_id("no_such_id") is None
+    assert m.track_by_id(None) is None
+    assert m.track_by_id("") is None
+
+
 def test_sync_catalog_preserves_existing_and_adds_new(monkeypatch):
     # Simulate an on-disk library that only has the OLD 100-track catalog,
     # with sad_00 already built+embedded — sync must keep it untouched and

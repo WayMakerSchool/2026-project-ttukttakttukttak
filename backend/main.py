@@ -2078,11 +2078,21 @@ async def detect_camera_chapter(
                         f"{mood.get('mood_ko')} → {track['id']} "
                         f"({mood.get('evidence','')[:40]})"
                     )
+        # Report the CANONICAL mood/bpm of whatever track is actually
+        # assigned right now, not the raw per-detection vision read. The
+        # live read has its own bpm guess for THIS page and fluctuates read
+        # to read (temperature isn't perfectly zero) even while the
+        # debounced track correctly stays the same — showing that raw value
+        # made the UI's BPM number flicker every ~4s despite the music
+        # itself being stable. `evidence` still comes from the live read
+        # (it's explaining THIS reading), only mood_ko/bpm are pinned to
+        # the actually-playing track.
+        playing = music_library.track_by_id(s.get("current_track_id"))
         return {
             "mode": "mood",
-            "mood_ko": mood.get("mood_ko", ""),
+            "mood_ko": (playing or {}).get("mood_ko") or mood.get("mood_ko", ""),
             "mood_en": mood.get("mood_en", ""),
-            "bpm": mood.get("bpm", 90),
+            "bpm": (playing or {}).get("bpm") or mood.get("bpm", 90),
             "evidence": mood.get("evidence", ""),
             "track_id": s.get("current_track_id", ""),
             "current_chapter_idx": s.get("current_chapter_idx", -1),

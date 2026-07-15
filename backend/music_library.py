@@ -367,6 +367,17 @@ def _catalog() -> list[dict]:
     return tracks
 
 
+def track_by_id(track_id: str | None) -> dict | None:
+    """Catalog entry for a track id, or None. Used to report the CANONICAL
+    mood/bpm of whatever is actually assigned to a session — those only
+    change when the track itself changes, unlike the raw per-detection vision
+    read (which has its own bpm guess for THIS page, and fluctuates read to
+    read even while the debounced track stays the same)."""
+    if not track_id:
+        return None
+    return next((t for t in load_library() if t["id"] == track_id), None)
+
+
 def track_path(track_id: str) -> Path:
     return LIBRARY_ROOT / f"{track_id}.pcm"
 
