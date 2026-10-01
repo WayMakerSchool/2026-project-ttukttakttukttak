@@ -4,6 +4,16 @@ from typing import AsyncIterator
 from google import genai
 from google.genai import types
 
+# python.org macOS builds ship without system CA certs wired up; the Lyria
+# websocket then dies with CERTIFICATE_VERIFY_FAILED on every connect.
+# Point OpenSSL at certifi's bundle unless the env already provides one.
+try:
+    import certifi
+
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except ImportError:
+    pass
+
 LYRIA_MODEL = "models/lyria-realtime-exp"
 
 
@@ -34,13 +44,27 @@ class LyriaStream:
             self._ctx = None
             self._session = None
 
-    async def set_prompt(self, prompt_text: str, bpm: int = 90) -> None:
+    async def set_prompt(
+        self,
+        prompt_text: str,
+        bpm: int = 90,
+        context_prompt: str | None = None,
+        context_weight: float = 0.1,
+    ) -> None:
         if self._session is None:
             raise RuntimeError("Lyria session not started")
         bpm = max(40, min(160, int(bpm)))
-        await self._session.set_weighted_prompts(
-            prompts=[types.WeightedPrompt(text=prompt_text, weight=1.0)]
-        )
+        prompts = [types.WeightedPrompt(text=prompt_text, weight=1.0)]
+        if context_prompt and context_prompt.strip():
+            # Reading-environment tint (place/weather/season). Lyria normalizes
+            # weights, so book 0.9 : context 0.1 means the environment nudges the
+            # music ~10% while the book's own mood stays dominant.
+            cw = max(0.0, min(0.5, context_weight))
+            prompts = [
+                types.WeightedPrompt(text=prompt_text, weight=1.0 - cw),
+                types.WeightedPrompt(text=context_prompt.strip(), weight=cw),
+            ]
+        await self._session.set_weighted_prompts(prompts=prompts)
         await self._session.set_music_generation_config(
             config=types.LiveMusicGenerationConfig(bpm=bpm)
         )

@@ -16,3 +16,13 @@ export function getClientId(): string {
 export function progressHeaders(): Record<string, string> {
   return { "X-Client-Id": getClientId() };
 }
+
+/** Build the `?cid=...&token=...` suffix used to authenticate static URLs
+ *  (PDF embeds, <img src=>, WebSocket) where custom headers can't be set.
+ *  Returns "?cid=..." prefix so callers can concatenate directly. */
+export function authQuery(idToken?: string | null): string {
+  const params = new URLSearchParams();
+  params.set("cid", getClientId());
+  if (idToken) params.set("token", idToken);
+  return `?${params.toString()}`;
+}

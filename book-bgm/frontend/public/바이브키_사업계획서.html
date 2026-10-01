@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>바이브키 — 사업계획서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#ffffff; --ink:#13203a; --ink2:#42526a; --muted:#7a8699;
+    --line:#e6e9ef; --panel:#f5f7fb;
+    --accent:#2563eb; --accent-d:#1d4ed8; --accent-soft:#eaf1ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+  /* progress + running header */
+  .progress{position:fixed;top:0;left:0;height:4px;background:var(--accent);z-index:30;width:5.5%;transition:width .55s cubic-bezier(.7,0,.2,1)}
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:2.6vh 7.5vw}
+  .topbar .wm{font-weight:800;letter-spacing:.14em;color:var(--ink);display:flex;align-items:center;gap:.55rem;font-size:1.02rem}
+  .topbar .wm svg{width:19px;height:19px;display:block}
+  .topbar .pg{color:var(--muted);font-weight:600;letter-spacing:.05em;font-size:1rem}
+  .topbar.hide{opacity:0;pointer-events:none}
+
+  /* deck */
+  .deck{position:relative;z-index:1;height:100vh;width:100vw;display:flex;transition:transform .55s cubic-bezier(.7,0,.2,1)}
+  .slide{min-width:100vw;height:100vh;padding:13vh 7.5vw 9vh;display:flex;flex-direction:column;justify-content:center;position:relative}
+  .slide.top{justify-content:flex-start}
+  .wrap{width:100%;max-width:1520px;margin:0 auto}
+
+  .eyebrow{font-size:.82rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:1.1rem;display:flex;align-items:center;gap:.7rem}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--accent);display:inline-block}
+  h2{font-size:2.9rem;font-weight:800;line-height:1.16;letter-spacing:-.5px;color:var(--ink)}
+  h2 .ac{color:var(--accent)}
+  .rule{width:54px;height:4px;background:var(--accent);margin:1.5rem 0 1.8rem;border-radius:2px}
+  .lead{font-size:1.5rem;color:var(--ink2);line-height:1.55;max-width:1150px}
+  .lead b{color:var(--ink);font-weight:700}
+  .src{position:absolute;left:7.5vw;bottom:5vh;font-size:.92rem;color:var(--muted)}
+  .note{font-size:1.18rem;color:var(--ink2);line-height:1.5;margin-top:1.6rem}
+  .note b{color:var(--accent-d);font-weight:700}
+
+  /* numbered list */
+  .nlist{margin-top:.4rem;border-top:1px solid var(--line)}
+  .nlist .row{display:flex;gap:1.6rem;align-items:flex-start;padding:1.15rem .2rem;border-bottom:1px solid var(--line)}
+  .nlist .n{font-size:1.05rem;font-weight:800;color:var(--accent);min-width:2rem;padding-top:.25rem;font-variant-numeric:tabular-nums}
+  .nlist .tx{font-size:1.42rem;color:var(--ink);line-height:1.45}
+  .nlist .tx b{font-weight:700}
+
+  /* pillars / columns */
+  .cols{display:grid;gap:0;margin-top:2rem;border-top:2px solid var(--ink)}
+  .cols.c3{grid-template-columns:repeat(3,1fr)}
+  .cols .col{padding:1.8rem 1.8rem 1.4rem;border-left:1px solid var(--line)}
+  .cols .col:first-child{border-left:none;padding-left:.2rem}
+  .col .k{font-size:.95rem;font-weight:800;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
+  .col .t{font-size:1.65rem;font-weight:800;margin:.7rem 0 .55rem;color:var(--ink)}
+  .col .s{font-size:1.12rem;color:var(--ink2);line-height:1.5}
+
+  /* story */
+  .story{font-size:2.05rem;line-height:1.62;font-weight:500;max-width:1180px;color:var(--ink2)}
+  .story b{color:var(--ink);font-weight:700}
+  .bigq{font-size:2.5rem;font-weight:800;line-height:1.34;max-width:1180px;margin-top:2rem;letter-spacing:-.5px;color:var(--ink)}
+  .bigq .ac{color:var(--accent)}
+
+  /* two col cards */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:.6rem}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;margin-top:.6rem}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.7rem 1.8rem;box-shadow:0 1px 2px rgba(16,32,54,.04)}
+  .panel .pk{font-size:.92rem;font-weight:800;letter-spacing:.05em;color:var(--accent);text-transform:uppercase}
+  .panel .pt{font-size:1.5rem;font-weight:800;margin:.6rem 0 .5rem;color:var(--ink)}
+  .panel .ps{font-size:1.12rem;color:var(--ink2);line-height:1.5}
+  .tagsm{display:inline-block;font-size:.82rem;font-weight:800;letter-spacing:.04em;padding:.18rem .6rem;border-radius:5px;margin-left:.4rem;vertical-align:middle}
+  .tag-main{background:var(--accent-soft);color:var(--accent-d)}
+  .tag-sub{background:#eef0f4;color:var(--muted)}
+
+  /* product */
+  .split{display:grid;grid-template-columns:360px 1fr;gap:4rem;align-items:center;margin-top:.6rem}
+  .phoneback{position:relative;width:280px;height:560px;border-radius:44px;margin:0 auto;background:linear-gradient(165deg,#1c2740,#0e1626);box-shadow:0 40px 80px -30px rgba(19,32,58,.45)}
+  .cam{position:absolute;top:22px;left:22px;width:90px;height:90px;border-radius:23px;background:rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}
+  .cam i{border-radius:50%;background:rgba(255,255,255,.13)}
+  .btn-diamond{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%) rotate(45deg);width:100px;height:100px;border-radius:24px;background:linear-gradient(135deg,#4285F4,#A05CF0,#EC5C8D);box-shadow:0 20px 50px -12px rgba(160,92,240,.6),inset 0 2px 8px rgba(255,255,255,.35)}
+  ul.ticks{list-style:none;margin-top:.2rem}
+  ul.ticks li{font-size:1.42rem;color:var(--ink);line-height:1.45;padding:.7rem 0 .7rem 2rem;position:relative;border-bottom:1px solid var(--line)}
+  ul.ticks li:last-child{border-bottom:none}
+  ul.ticks li::before{content:"";position:absolute;left:0;top:1.25rem;width:9px;height:9px;border-radius:2px;background:var(--accent)}
+  ul.ticks b{font-weight:700}
+
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:.9rem;flex-wrap:wrap;margin-top:.6rem}
+  .step{flex:1;min-width:190px;border:1px solid var(--line);border-radius:12px;padding:1.5rem 1.4rem;background:#fff;position:relative}
+  .step .sn{font-size:.95rem;font-weight:800;color:var(--accent)}
+  .step .st{font-size:1.42rem;font-weight:800;margin-top:.55rem;color:var(--ink)}
+  .step .ss{font-size:1.05rem;color:var(--ink2);margin-top:.35rem;line-height:1.4}
+  .farrow{display:flex;align-items:center;color:var(--muted);font-size:1.6rem}
+  .ftags{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.8rem}
+  .ftag{border:1px solid var(--line);border-radius:8px;padding:.7rem 1.2rem;font-size:1.25rem;font-weight:600;color:var(--ink);background:var(--panel)}
+
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;margin-top:.4rem}
+  .tbl th,.tbl td{padding:1.15rem 1.1rem;text-align:left;font-size:1.28rem;vertical-align:top}
+  .tbl thead th{font-size:1.05rem;color:var(--muted);font-weight:800;border-bottom:2px solid var(--ink);letter-spacing:.02em}
+  .tbl tbody td{border-bottom:1px solid var(--line);color:var(--ink2)}
+  .tbl tbody td:first-child{color:var(--ink);font-weight:700}
+  .tbl .sublabel{display:block;font-size:.98rem;color:var(--muted);font-weight:500;margin-top:.2rem}
+  .tbl .me{background:var(--accent-soft)}
+  .tbl thead th.me{color:var(--accent-d);border-bottom-color:var(--accent)}
+  .tbl tbody td.me{color:var(--ink);font-weight:700}
+
+  /* timeline */
+  .tl{margin-top:.8rem;position:relative;padding-left:2.2rem}
+  .tl::before{content:"";position:absolute;left:6px;top:.5rem;bottom:.5rem;width:2px;background:var(--line)}
+  .tl .it{position:relative;display:grid;grid-template-columns:215px 1fr;gap:1.6rem;align-items:baseline;padding:.7rem 0;border-bottom:1px solid var(--line)}
+  .tl .it:last-child{border-bottom:none}
+  .tl .it::before{content:"";position:absolute;left:-2.2rem;top:1.15rem;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+  .tl .when{font-size:1.12rem;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .tl .what{font-size:1.38rem;font-weight:700;color:var(--ink)}
+  .tl .what span{display:block;font-size:1.05rem;color:var(--ink2);font-weight:500;margin-top:.25rem}
+
+  /* pricing */
+  .pricegrid{display:grid;grid-template-columns:1.15fr .85fr;gap:3rem;margin-top:1rem;align-items:start}
+  .ptable{width:100%;border-collapse:collapse;font-size:1.28rem}
+  .ptable td{padding:.78rem .2rem;border-bottom:1px solid var(--line);color:var(--ink2)}
+  .ptable td:first-child{color:var(--ink)}
+  .ptable td:last-child{text-align:right;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  .ptable tr.sum td{border-top:2px solid var(--ink);border-bottom:none;font-size:1.42rem;font-weight:800;color:var(--ink);padding-top:1rem}
+  .pricebox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:2.2rem}
+  .pricebox .pl{font-size:1.1rem;color:var(--muted);font-weight:600}
+  .pricebox .pv{font-size:3.4rem;font-weight:800;color:var(--accent);margin:.3rem 0 1.1rem;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .pricebox .eb{font-size:1.25rem;color:var(--ink);font-weight:600}
+  .pricebox .eb b{color:var(--accent-d);font-weight:800}
+  .pricebox .pn{font-size:.95rem;color:var(--muted);margin-top:1rem;line-height:1.45}
+
+  /* stages */
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:.6rem}
+  .stage{border:1px solid var(--line);border-radius:12px;padding:1.6rem 1.7rem;background:#fff}
+  .stage .sn{font-size:.92rem;font-weight:800;letter-spacing:.05em;color:var(--accent);text-transform:uppercase}
+  .stage .stt{font-size:1.42rem;font-weight:800;margin:.5rem 0 .55rem;color:var(--ink)}
+  .stage .sss{font-size:1.08rem;color:var(--ink2);line-height:1.45}
+
+  /* team */
+  .team{display:grid;grid-template-columns:repeat(5,1fr);gap:1.1rem;margin-top:.6rem}
+  .member{border:1px solid var(--line);border-radius:12px;padding:1.5rem 1.3rem;background:#fff}
+  .member .av{width:48px;height:48px;border-radius:10px;background:var(--accent-soft);color:var(--accent-d);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;margin-bottom:.9rem}
+  .member .mn{font-size:1.42rem;font-weight:800;color:var(--ink)}
+  .member .mr{font-size:1.02rem;color:var(--accent);font-weight:700;margin-top:.2rem}
+  .member .md{font-size:1rem;color:var(--ink2);margin-top:.6rem;line-height:1.45}
+
+  /* cover */
+  .cover{padding:0 7.5vw}
+  .cover .bar{width:64px;height:6px;background:linear-gradient(90deg,#4285F4,#A05CF0,#EC5C8D);border-radius:3px;margin-bottom:2.4rem}
+  .cover .cw{font-size:1.05rem;font-weight:800;letter-spacing:.16em;color:var(--ink);display:flex;align-items:center;gap:.6rem;margin-bottom:1.6rem}
+  .cover .cw svg{width:24px;height:24px}
+  .cover .ce{font-size:1.05rem;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-bottom:1.1rem}
+  .cover h1{font-size:6rem;font-weight:800;letter-spacing:-2px;color:var(--ink);line-height:1}
+  .cover .csub{font-size:2rem;color:var(--ink2);font-weight:600;margin-top:1.3rem}
+  .cover .ctag{font-size:1.4rem;color:var(--muted);margin-top:.7rem}
+  .cover .cmeta{margin-top:3rem;padding-top:1.6rem;border-top:1px solid var(--line);font-size:1.15rem;color:var(--ink2);font-weight:600}
+
+  /* closing */
+  .closing{align-items:center;text-align:center}
+  .closing svg.cd{width:120px;height:120px;margin-bottom:1.8rem}
+  .closing .cstmt{font-size:3rem;font-weight:800;color:var(--ink);letter-spacing:-.5px}
+  .closing .cstmt .ac{color:var(--accent)}
+  .closing .cbk{font-size:4.6rem;font-weight:800;color:var(--ink);margin-top:1.3rem;letter-spacing:-1.5px}
+  .closing .csb{font-size:1.6rem;color:var(--ink2);margin-top:.7rem}
+  .closing .cfoot{margin-top:2.4rem;font-size:1.1rem;color:var(--muted);letter-spacing:.06em}
+
+  /* nav */
+  .nav{position:fixed;z-index:20;bottom:4vh;right:3.5vw;display:flex;gap:.6rem}
+  .nav button{background:#fff;border:1px solid var(--line);color:var(--ink);width:50px;height:50px;border-radius:10px;font-size:1.4rem;cursor:pointer;transition:.15s}
+  .nav button:hover{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="topbar" id="topbar">
+  <div class="wm">
+    <svg viewBox="0 0 200 200"><path d="M 82 26 C 109 64 109 64 146 90 C 109 116 109 116 82 154 C 55 116 55 116 18 90 C 55 64 55 64 82 26 Z" fill="#13203a"/><path d="M 150 124 C 161 140 161 140 176 150 C 161 160 161 160 150 176 C 139 160 139 160 124 150 C 139 140 139 140 150 124 Z" fill="#13203a"/></svg>
+    VIBEKEY
+  </div>
+  <div class="pg">사업계획서 · <span id="cur">01</span> / <span id="total">18</span></div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 COVER -->
+  <section class="slide cover">
+    <div class="wrap">
+      <div class="bar"></div>
+      <div class="ce">2026 대한민국 청소년 창업경진대회 · 사업계획서</div>
+      <h1>바이브키</h1>
+      <div class="csub">내 바이브대로, 스마트하게</div>
+      <div class="ctag">화면을 보지 않아도, 주머니 속 버튼 하나로 안전하게.</div>
+      <div class="cmeta">동아리 뚝딱뚝딱 · WMS Way Maker School</div>
+    </div>
+  </section>
+
+  <!-- 2 POSITIONING -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">한 줄 소개</div>
+      <h2>폰꾸, 망설이지 말고 <span class="ac">바이브키</span> 하세요</h2>
+      <div class="rule"></div>
+      <div class="lead">스마트폰 화면을 보거나 터치하기 힘든 <b>이동 중에도</b>, 주머니 속에서 물리 버튼을 딸깍 — 원하는 기능을 <b>안전하게</b> 실행합니다.</div>
+      <div class="cols c3">
+        <div class="col"><div class="k">Safety</div><div class="t">보행 안전</div><div class="s">화면을 보지 않고도 기능을 실행해 이동 중 한눈팔기를 줄입니다.</div></div>
+        <div class="col"><div class="k">Function + Design</div><div class="t">기능 ＋ 꾸미기</div><div class="s">편리한 단축 기능과 나만의 디자인을 하나의 액세서리로.</div></div>
+        <div class="col"><div class="k">Reliability</div><div class="t">오작동 방지</div><div class="s">테두리·쿠션 구조로 주머니 속 의도치 않은 작동을 차단합니다.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 STORY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">개발 동기</div>
+      <div class="story">
+        양손 가득 짐을 들고 길을 걷는데 주머니 속 휴대폰이 울립니다.
+        전화를 받으려 화면을 꺼내 드는 순간, <b>눈은 화면으로, 발은 횡단보도로</b> 향합니다.
+        누구나 한 번쯤 겪어 본 이 짧은 한눈팔기가, 때로는 아찔한 순간으로 이어집니다.
+      </div>
+      <div class="bigq">“화면을 보지 않아도, 손이 자유롭지 않아도,<br/><span class="ac">자주 쓰는 기능만큼은 안전하게</span> 쓸 수 없을까?”</div>
+    </div>
+  </section>
+
+  <!-- 4 PROBLEM 1 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Problem 01 · 보행 안전</div>
+      <h2>걸으며 보는 화면이, <span class="ac">시야를 가립니다</span></h2>
+      <div class="rule"></div>
+      <div class="nlist">
+        <div class="row"><div class="n">01</div><div class="tx">보행 중 주의가 흐트러져 생기는 교통사고의 상당수가 <b>스마트폰 사용</b>과 관련</div></div>
+        <div class="row"><div class="n">02</div><div class="tx">걸으면서 화면을 보면 <b>주변 시야·전방 주시력</b>이 크게 저하</div></div>
+        <div class="row"><div class="n">03</div><div class="tx">신호 변경, 다가오는 자전거·차량에 대한 <b>대처가 늦어짐</b></div></div>
+        <div class="row"><div class="n">04</div><div class="tx">화면을 보지 않고 기능을 실행하면 <b>더 안전한 이동</b>이 가능</div></div>
+      </div>
+    </div>
+    <div class="src">출처: 삼성교통안전문화연구소, Young Hyundai</div>
+  </section>
+
+  <!-- 5 PROBLEM 2 -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Problem 02 · 밋밋해지는 폰, 커지는 ‘꾸미기’</div>
+      <h2>버튼은 사라지고, <span class="ac">개성은 더 갈망됩니다</span></h2>
+      <div class="rule"></div>
+      <div class="grid2">
+        <div class="panel"><div class="pk">Trend A</div><div class="pt">사라지는 물리 버튼</div><div class="ps">바형·버튼 3개 구성으로 단순해지고, 측면의 물리 버튼마저 화면 가장자리 터치 영역으로 대체하려는 흐름까지 등장.</div></div>
+        <div class="panel"><div class="pk">Trend B</div><div class="pt">커지는 ‘N꾸’ 문화</div><div class="ps">기기가 밋밋해질수록 손끝의 촉각과 ‘나만의 디자인’을 더 원함 → 다꾸·폰꾸·신꾸로 이어지는 꾸미기 문화 성장.</div></div>
+      </div>
+      <div class="note">바이브키는 이 둘을 <b>하나로</b> 묶습니다 — 손끝으로 느끼는 버튼 + 나답게 꾸미는 디자인.</div>
+    </div>
+  </section>
+
+  <!-- 6 SOLUTION -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">The Solution</div>
+      <h2>안전하게 쓰는 버튼 <span class="ac">＋</span> 나답게 꾸미는 디자인</h2>
+      <div class="rule"></div>
+      <div class="split">
+        <div class="phoneback"><div class="cam"><i></i><i></i><i></i><i></i></div><div class="btn-diamond"></div></div>
+        <ul class="ticks">
+          <li>스마트폰 케이스를 꾸미는 <b>유용한 액세서리</b></li>
+          <li>화면 켜고 잠금 풀어 앱 찾는 과정 없이, <b>주머니 속 버튼 한 번</b>으로 실행</li>
+          <li>버튼 캡·케이스 디자인을 <b>자유롭게 골라 끼우는</b> 폰꾸</li>
+          <li><b>‘편리한 기능’과 ‘나만의 꾸미기’</b>를 한 번에</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 KEY DESIGN -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Key Design · 오작동 방지 구조</div>
+      <h2>주머니 속에서도, <span class="ac">실수로 눌리지 않게</span></h2>
+      <div class="rule"></div>
+      <div class="split" style="grid-template-columns:480px 1fr;gap:3.4rem">
+        <div style="display:flex;justify-content:center">
+          <svg width="460" height="300" viewBox="0 0 460 300">
+            <rect x="50" y="206" width="360" height="56" rx="14" fill="#f5f7fb" stroke="#c9d2e0" stroke-width="2"/>
+            <text x="230" y="285" fill="#7a8699" font-size="14" text-anchor="middle" font-family="Pretendard,Noto Sans KR">폰케이스 베이스</text>
+            <rect x="195" y="182" width="70" height="26" rx="7" fill="#eaf1ff" stroke="#2563eb" stroke-width="2"/>
+            <text x="230" y="200" fill="#1d4ed8" font-size="13" text-anchor="middle" font-family="Pretendard,Noto Sans KR" font-weight="700">버튼·센서</text>
+            <path d="M200 182 q10 -13 0 -26 q-10 -13 0 -26" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+            <path d="M260 182 q-10 -13 0 -26 q10 -13 0 -26" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+            <rect x="206" y="128" width="48" height="13" rx="6" fill="#c7d6ff"/>
+            <text x="340" y="156" fill="#2563eb" font-size="13" font-family="Pretendard,Noto Sans KR" font-weight="600">쿠션 · 스프링</text>
+            <path d="M130 124 L170 124 L160 102 L215 102 L225 78 L235 102 L290 102 L280 124 L320 124 L300 146 L150 146 Z" fill="#eaf1ff" stroke="#2563eb" stroke-width="2"/>
+            <text x="225" y="66" fill="#13203a" font-size="14" text-anchor="middle" font-family="Pretendard,Noto Sans KR" font-weight="700">별 모양 장식 캡 (테두리가 감쌈)</text>
+            <circle cx="130" cy="110" r="15" fill="#aeb8c8"/>
+            <text x="78" y="114" fill="#7a8699" font-size="13" text-anchor="end" font-family="Pretendard,Noto Sans KR">동전·열쇠</text>
+          </svg>
+        </div>
+        <ul class="ticks" style="align-self:center">
+          <li>별 모양 장식 캡의 <b>테두리(꼭짓점)</b>가 버튼을 감싸고, 안에 <b>고무 쿠션·스프링</b></li>
+          <li>평소엔 테두리가 먼저 닿고 쿠션이 약한 힘을 흡수 → <b>안 눌림</b></li>
+          <li>손끝으로 <b>가운데를 또렷이</b> 눌러야 센서 작동</li>
+          <li>꾸미는 액세서리를 넘어 <b>주머니에 넣고 다녀도 안심</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 HOW IT WORKS -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">How It Works</div>
+      <h2>누르는 방식마다, <span class="ac">다른 기능</span></h2>
+      <div class="rule"></div>
+      <div class="flow">
+        <div class="step"><div class="sn">STEP 1</div><div class="st">버튼 입력</div><div class="ss">한 번 · 두 번 · 길게</div></div>
+        <div class="farrow">→</div>
+        <div class="step"><div class="sn">STEP 2</div><div class="st">유선 직접 연결</div><div class="ss">케이블로 즉시 전송</div></div>
+        <div class="farrow">→</div>
+        <div class="step"><div class="sn">STEP 3</div><div class="st">전용 앱</div><div class="ss">입력–기능 매핑</div></div>
+        <div class="farrow">→</div>
+        <div class="step"><div class="sn">STEP 4</div><div class="st">기능 실행</div><div class="ss">화면 없이 즉시</div></div>
+      </div>
+      <div class="ftags">
+        <div class="ftag">카메라</div><div class="ftag">게임</div><div class="ftag">매크로</div>
+        <div class="ftag">전화</div><div class="ftag">음악</div><div class="ftag">길찾기</div>
+      </div>
+      <div class="note" style="margin-top:1.6rem">입력 패턴(한 번/두 번/길게)–기능 매핑 및 사용자 설정 기능을 전용 앱에서 제공합니다.</div>
+    </div>
+  </section>
+
+  <!-- 9 DIFFERENTIATION -->
+  <section class="slide top">
+    <div class="wrap">
+      <div class="eyebrow">차별성 · Why 바이브키</div>
+      <h2>기존 제품과 <span class="ac">무엇이 다른가</span></h2>
+      <div class="rule"></div>
+      <table class="tbl">
+        <thead><tr><th style="width:24%">비교 대상</th><th style="width:38%">기존 방식</th><th class="me">바이브키의 방식</th></tr></thead>
+        <tbody>
+          <tr><td>폰꾸 액세서리<span class="sublabel">스티커·참</span></td><td>외형만 꾸밈 · 기능은 없음</td><td class="me">꾸미면서 실제 기능까지 더함</td></tr>
+          <tr><td>내장 단축 기능<span class="sublabel">측면·액션 버튼</span></td><td>한 가지 동작에 고정 · 외형 변경 불가</td><td class="me">입력 패턴마다 기능 지정 · 캡 교체로 디자인 변경</td></tr>
+          <tr><td>일반 무선 버튼</td><td>충전·페어링 필요 · 노출형이라 주머니 속 오작동 우려</td><td class="me">유선 직결로 충전 불필요·즉시 반응 · 테두리·쿠션 구조로 오작동 방지</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 SOCIAL VALUE -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Social Value · 사회적 가치</div>
+      <h2><span class="ac">안전</span> · <span class="ac">포용</span> · <span class="ac">지속가능</span></h2>
+      <div class="cols c3">
+        <div class="col"><div class="k">개인</div><div class="t">더 안전한 이동</div><div class="s">이동 중 화면을 보다 생기는 보행 안전 사고를, 화면 없이 기능을 실행해 줄입니다.</div></div>
+        <div class="col"><div class="k">포용</div><div class="t">누구나 쉬운 사용</div><div class="s">시각·손동작에 제약이 있어도, 정해진 위치의 물리 버튼으로 쉽게 사용합니다.</div></div>
+        <div class="col"><div class="k">환경</div><div class="t">오래 쓰는 소비</div><div class="s">기기·케이스를 새로 사는 대신 캡·디자인만 교체하는 지속가능한 소비 문화.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 MARKET -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Market · 시장 트렌드와 성장성</div>
+      <h2>두 흐름 위에 <span class="ac">서 있습니다</span></h2>
+      <div class="rule"></div>
+      <div class="grid2">
+        <div class="panel"><div class="pk">Trend</div><div class="pt">‘N꾸’ 소비</div><div class="ps">새 제품을 사기보다 <b style="color:var(--ink)">내 물건을 꾸미는</b> 소비. 다꾸·폰꾸·신꾸로 확산.</div></div>
+        <div class="panel"><div class="pk">Market</div><div class="pt">프리미엄 케이스·액세서리</div><div class="ps">보호를 넘어 <b style="color:var(--ink)">개성·취향 표현</b> 수단으로 성장. 제조 기반의 <b style="color:var(--ink)">아시아·태평양</b>이 최대 비중.</div></div>
+      </div>
+      <div class="note">바이브키는 이 두 시장이 만나는 <b>교차점</b>에 자리합니다.</div>
+    </div>
+    <div class="src">출처: 한남대신문, Mordor Intelligence</div>
+  </section>
+
+  <!-- 12 TARGET -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Target · 목표 고객</div>
+      <h2>우리 고객은 <span class="ac">누구인가</span></h2>
+      <div class="rule"></div>
+      <div class="grid4">
+        <div class="panel"><div class="pt" style="font-size:1.4rem">10~30대 폰꾸족<span class="tagsm tag-main">메인</span></div><div class="ps">스마트폰을 개성 표현 수단으로 여기고 꾸미기에 적극적.</div></div>
+        <div class="panel"><div class="pt" style="font-size:1.4rem">이동 많은 학생·직장인<span class="tagsm tag-main">메인</span></div><div class="ps">통학·도보 이동 중에도 빠르고 안전한 조작을 원함.</div></div>
+        <div class="panel"><div class="pt" style="font-size:1.4rem">앱 단축 사용자<span class="tagsm tag-sub">서브</span></div><div class="ps">카메라·게임·매크로를 한 번에 실행하고 싶어 함.</div></div>
+        <div class="panel"><div class="pt" style="font-size:1.4rem">DIY·메이킹 관심층<span class="tagsm tag-sub">서브</span></div><div class="ps">직접 꾸미고 조립하는 경험 자체를 즐김.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 ROADMAP -->
+  <section class="slide top">
+    <div class="wrap">
+      <div class="eyebrow">Roadmap · 추진 계획</div>
+      <h2><span class="ac">단계별</span> 추진 계획</h2>
+      <div class="rule"></div>
+      <div class="tl">
+        <div class="it"><div class="when">2026.06 – 07</div><div class="what">시제품 안정화 · 버튼 구조 완성<span>오작동 방지 구조(테두리·쿠션) 적용, 유선 연결 안정화</span></div></div>
+        <div class="it"><div class="when">2026.07 – 08</div><div class="what">전용 앱 기능 완성<span>입력 패턴–기능 매핑 및 사용자 설정 기능 구현</span></div></div>
+        <div class="it"><div class="when">2026.08 – 10</div><div class="what">완성형 케이스 출시<span>완성형 디자인 라인업 구축 및 정식 판매 개시</span></div></div>
+        <div class="it"><div class="when">2026.10 – 11</div><div class="what">크라우드펀딩 진행<span>텀블벅·와디즈 사전 홍보 및 양산 자금 확보</span></div></div>
+        <div class="it"><div class="when">2026.11 – 2027.03</div><div class="what">DIY 키트 출시 · 온라인 입점<span>커스텀 부자재·DIY 패키지 구성, 온라인 플랫폼 입점</span></div></div>
+        <div class="it"><div class="when">2027.04 – 계속</div><div class="what">온·오프라인 브랜드 확장<span>팝업스토어 운영 및 DIY 원데이 클래스로 접점 확대</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 GO TO MARKET + PRICE -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Go-to-Market · 판매 전략과 가격</div>
+      <h2>진입 → 구축 → 확장</h2>
+      <div class="rule"></div>
+      <div class="stages">
+        <div class="stage"><div class="sn">1단계 · 시장 진입</div><div class="stt">크라우드펀딩</div><div class="sss">텀블벅·와디즈로 초기 고객 확보·시장 반응 검증·양산 자금 확보.</div></div>
+        <div class="stage"><div class="sn">2단계 · 브랜드 구축</div><div class="stt">자체 스토어·편집샵</div><div class="sss">스마트스토어·오늘의집 등으로 인지도·단골 고객 형성.</div></div>
+        <div class="stage"><div class="sn">3단계 · 확장</div><div class="stt">오프라인·제휴</div><div class="sss">팝업스토어·DIY 원데이 클래스·제휴로 판매처 확보.</div></div>
+      </div>
+      <div class="pricegrid">
+        <table class="ptable">
+          <tr><td>유선 버튼 모듈(케이블 일체형)</td><td>약 8,000원</td></tr>
+          <tr><td>버튼 · 스프링 · 고무 캡</td><td>약 3,000원</td></tr>
+          <tr><td>케이스 · 마운트</td><td>약 5,000원</td></tr>
+          <tr><td>USB 커넥터 · 부자재</td><td>약 2,000원</td></tr>
+          <tr><td>포장재 · 설명서</td><td>약 4,000원</td></tr>
+          <tr class="sum"><td>예상 제조 원가</td><td>약 22,000원</td></tr>
+        </table>
+        <div class="pricebox">
+          <div class="pl">목표 판매가</div>
+          <div class="pv">39,000원</div>
+          <div class="eb">크라우드펀딩 얼리버드 <b>약 32,000원</b></div>
+          <div class="pn">부자재 공동구매·단계적 양산으로 원가 절감. 예상치이며 견적에 따라 조정될 수 있습니다.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 MARKETING -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Marketing · 홍보 전략</div>
+      <h2>숏폼으로 보여주고, <span class="ac">챌린지로 퍼뜨린다</span></h2>
+      <div class="rule"></div>
+      <div class="cols c3">
+        <div class="col"><div class="k">Channel</div><div class="t">숏폼 마케팅</div><div class="s">릴스·틱톡·쇼츠로 ‘버튼 한 번에 기능 실행’ 직관 시연 + 꾸미기 비주얼 콘텐츠.</div></div>
+        <div class="col"><div class="k">Community</div><div class="t">#바이브키챌린지</div><div class="s">기능 매핑 꿀팁·DIY 커스텀 인증 챌린지로 고객 참여형 커뮤니티 형성.</div></div>
+        <div class="col"><div class="k">UGC</div><div class="t">인플루언서 협업</div><div class="s">라이프스타일·자취·인테리어 크리에이터 협업, 후기 리워드·해시태그로 UGC 확대.</div></div>
+      </div>
+      <div class="note">타깃별 메시지 — 폰꾸족엔 <b>“기능까지 꾸민다”</b>, 이동 많은 사용자엔 <b>“화면 안 보고 한 번에”</b>.</div>
+    </div>
+  </section>
+
+  <!-- 16 RISK -->
+  <section class="slide top">
+    <div class="wrap">
+      <div class="eyebrow">Risk & Solution · 예상 장애와 대비</div>
+      <h2>위험을 미리 <span class="ac">설계에 반영</span>합니다</h2>
+      <div class="rule"></div>
+      <div class="grid2">
+        <div class="panel"><div class="pk">Risk 01</div><div class="pt" style="font-size:1.35rem">케이블 단선·버튼 내구성</div><div class="ps">양산 전 반복 누름·케이블 굴곡 내구성 테스트, 쿠션·스프링 규격 표준화로 클릭감·인식률 유지.</div></div>
+        <div class="panel"><div class="pk">Risk 02</div><div class="pt" style="font-size:1.35rem">단자 호환·연결 안정성</div><div class="ps">USB-C·Lightning 등 대표 단자 우선 지원, 견고한 커넥터·플러그앤플레이로 연결 안정성 확보.</div></div>
+        <div class="panel"><div class="pk">Risk 03</div><div class="pt" style="font-size:1.35rem">AI 활용 개발 일정 지연</div><div class="ps">AI 코딩 도구를 적극 활용하되 핵심 기능부터 단계적으로 검증해 디버깅 리스크 관리.</div></div>
+        <div class="panel"><div class="pk">Risk 04</div><div class="pt" style="font-size:1.35rem">가격 경쟁력·지속 사용</div><div class="ps">부자재 공동구매·단계적 양산으로 단가 절감, 새 디자인 캡·기능 업데이트로 지속 사용 유도.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 TEAM -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="eyebrow">Team · 창업동아리 뚝딱뚝딱</div>
+      <h2>이 버튼을, <span class="ac">우리가 만듭니다</span></h2>
+      <div class="rule"></div>
+      <div class="team">
+        <div class="member"><div class="av">민</div><div class="mn">김민재</div><div class="mr">대표</div><div class="md">전체 기획 총괄, 사업계획 수립·일정 관리, 외부 미팅·대회 대응.</div></div>
+        <div class="member"><div class="av">현</div><div class="mn">조현우</div><div class="mr">부대표 · 디자인</div><div class="md">브랜드 메시지·카피라이팅, 디자인 방향 설정.</div></div>
+        <div class="member"><div class="av">지</div><div class="mn">김지한</div><div class="mr">소프트웨어</div><div class="md">버튼–기능 매핑 앱 및 펌웨어 연동 등 SW 개발.</div></div>
+        <div class="member"><div class="av">제</div><div class="mn">김민제</div><div class="mr">하드웨어</div><div class="md">버튼 모듈·케이스 구조 등 HW 설계 및 시제품 제작.</div></div>
+        <div class="member"><div class="av">길</div><div class="mn">안길호</div><div class="mr">지도교사</div><div class="md">팀 운영 자문 및 이견 조율 중재.</div></div>
+      </div>
+      <div class="note" style="margin-top:1.8rem">수평적 소통 · 영역별 결정권 존중 · 협동과 고마움 표현 — 세 원칙으로 이견을 조율합니다.</div>
+    </div>
+  </section>
+
+  <!-- 18 CLOSING -->
+  <section class="slide closing">
+    <div class="wrap" style="display:flex;flex-direction:column;align-items:center">
+      <svg class="cd" viewBox="0 0 200 200"><path d="M 82 26 C 109 64 109 64 146 90 C 109 116 109 116 82 154 C 55 116 55 116 18 90 C 55 64 55 64 82 26 Z" fill="url(#vkg)"/><path d="M 150 124 C 161 140 161 140 176 150 C 161 160 161 160 150 176 C 139 160 139 160 124 150 C 139 140 139 140 150 124 Z" fill="url(#vkg)"/>
+        <defs><linearGradient id="vkg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4285F4"/><stop offset="0.5" stop-color="#A05CF0"/><stop offset="1" stop-color="#EC5C8D"/></linearGradient></defs>
+      </svg>
+      <div class="cstmt">안전과 나다움을, <span class="ac">버튼 하나에</span></div>
+      <div class="cbk">바이브키</div>
+      <div class="csb">내 바이브대로, 스마트하게</div>
+      <div class="cfoot">동아리 뚝딱뚝딱 · WMS Way Maker School</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav"><button id="prev">‹</button><button id="next">›</button></div>
+
+<script>
+const deck=document.getElementById('deck');
+const slides=document.querySelectorAll('.slide');
+const N=slides.length;
+document.getElementById('total').textContent=String(N).padStart(2,'0');
+const topbar=document.getElementById('topbar');
+const prog=document.getElementById('prog');
+let idx=0;
+function go(i,fromHash){
+  idx=Math.max(0,Math.min(N-1,i));
+  deck.style.transform=`translateX(-${idx*100}vw)`;
+  document.getElementById('cur').textContent=String(idx+1).padStart(2,'0');
+  prog.style.width=((idx+1)/N*100)+'%';
+  topbar.classList.toggle('hide', idx===0 || idx===N-1);
+  if(!fromHash)location.hash=idx+1;
+}
+document.getElementById('next').onclick=()=>go(idx+1);
+document.getElementById('prev').onclick=()=>go(idx-1);
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(idx+1);
+  if(e.key==='ArrowLeft'||e.key==='PageUp')go(idx-1);
+});
+function fromHash(){const n=parseInt(location.hash.slice(1),10);if(n>=1&&n<=N){go(n-1,true);}else{go(0,true);}}
+addEventListener('hashchange',fromHash);
+fromHash();
+</script>
+</body>
+</html>
