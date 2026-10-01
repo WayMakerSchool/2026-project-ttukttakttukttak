@@ -1,0 +1,164 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .in-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .in-stage { position: absolute; inset: 0; }
+
+    .in-eyebrow {
+      position: absolute; left: 0; top: 96px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .in-title {
+      position: absolute; left: 0; top: 140px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 60px;
+      letter-spacing: -0.025em; color: #101418; opacity: 0;
+    }
+
+    .in-ghost { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; }
+    .in-svg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+
+    .in-node {
+      position: absolute; top: 400px; width: 214px; height: 104px; border-radius: 14px;
+      background: rgba(11,87,208,0.04); border: 1.5px solid rgba(11,87,208,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 29px; color: #101418;
+      opacity: 0; text-align: center; line-height: 1.2;
+    }
+    .in-sub {
+      position: absolute; top: 518px; width: 214px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 17px;
+      color: #41505E; opacity: 0; letter-spacing: -0.01em;
+    }
+
+    .in-chatter { position: absolute; left: 946px; top: 600px; width: 300px; opacity: 0; }
+    .in-chatterlabel {
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      color: #0B57D0; text-align: center; margin-bottom: 10px;
+    }
+
+    .in-result {
+      position: absolute; left: 0; top: 762px; width: 1920px; text-align: center;
+      font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 31px;
+      color: #41505E; opacity: 0;
+    }
+    .in-result b { font-weight: 700; color: #101418; }
+  </style>
+
+  <div id="root" data-composition-id="05-inside" data-start="0" data-duration="20" data-width="1920" data-height="1080">
+    <div id="in-bg" class="clip in-bg" data-start="0" data-duration="20" data-track-index="0"></div>
+
+    <div id="in-stage" class="clip in-stage" data-start="0" data-duration="20" data-track-index="1">
+      <!-- 배경으로 물러난 기기 도해 -->
+      <svg class="in-ghost" id="in-ghost" viewBox="0 0 1920 1080">
+        <path d="M660 300 L1260 300 Q1276 300 1276 316 L1276 760 Q1276 776 1260 776 L660 776 Q644 776 644 760 L644 316 Q644 300 660 300 Z"
+              fill="none" stroke="#101418" stroke-width="3" />
+        <circle cx="760" cy="420" r="40" fill="none" stroke="#101418" stroke-width="3" />
+        <circle cx="880" cy="420" r="40" fill="none" stroke="#101418" stroke-width="3" />
+        <circle cx="1000" cy="420" r="40" fill="none" stroke="#101418" stroke-width="3" />
+      </svg>
+
+      <svg class="in-svg" viewBox="0 0 1920 1080">
+        <path id="in-axis" d="M150 452 L1770 452" fill="none" stroke="rgba(11,87,208,0.28)" stroke-width="2.5" stroke-linecap="round" />
+        <circle id="in-dot" cx="150" cy="452" r="13" fill="#0B57D0" opacity="0" />
+        <!-- 채터링 미니 그래프 -->
+        <path id="in-dirty" d="M960 664 L976 664 L976 640 L984 640 L984 664 L992 664 L992 638 L1000 638 L1000 664 L1010 664 L1010 636 L1050 636 L1050 664 L1090 664 L1090 638 L1098 638 L1098 664 L1108 664"
+              fill="none" stroke="#B3261E" stroke-width="2.5" opacity="0" />
+        <path id="in-clean" d="M960 730 L1010 730 L1010 702 L1090 702 L1090 730 L1140 730"
+              fill="none" stroke="#0B57D0" stroke-width="3" opacity="0" />
+      </svg>
+
+      <div class="in-eyebrow" id="in-eyebrow">기기 안에서 일어나는 일</div>
+      <div class="in-title" id="in-title">눌린 순간을 놓치지 않는다</div>
+
+      <div class="in-node" id="in-n0" style="left: 43px;">버튼</div>
+      <div class="in-sub"  id="in-s0" style="left: 43px;">D0 · D1 · D2</div>
+      <div class="in-node" id="in-n1" style="left: 333px;">인터럽트</div>
+      <div class="in-sub"  id="in-s1" style="left: 333px;">IRAM_ATTR</div>
+      <div class="in-node" id="in-n2" style="left: 623px;">큐</div>
+      <div class="in-sub"  id="in-s2" style="left: 623px;">xQueueSendFromISR</div>
+      <div class="in-node" id="in-n3" style="left: 913px;">입력 태스크</div>
+      <div class="in-sub"  id="in-s3" style="left: 913px;">10ms · core 1</div>
+      <div class="in-node" id="in-n4" style="left: 1203px;">프로토콜 태스크</div>
+      <div class="in-sub"  id="in-s4" style="left: 1203px;">5ms · core 1</div>
+      <div class="in-node" id="in-n5" style="left: 1493px;">USB</div>
+      <div class="in-sub"  id="in-s5" style="left: 1493px;">CDC · 폰으로</div>
+
+      <div class="in-chatter" id="in-chatter">
+        <div class="in-chatterlabel">채터링 25ms 제거</div>
+      </div>
+
+      <div class="in-result" id="in-result">폴링이 아닙니다. <b>인터럽트로 눌린 순간을 잡습니다.</b></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      function draw(sel, at, dur, ease) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        var len = el.getTotalLength ? el.getTotalLength() : 1000;
+        gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+        tl.to(el, { strokeDashoffset: 0, duration: dur, ease: ease || "power2.inOut" }, at);
+      }
+
+      /* ---- Scene 1 (0.0–4.0) : 기기가 배경으로 물러나고 축이 그려진다 ---- */
+      tl.fromTo("#in-eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.15);
+      tl.fromTo("#in-title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.5);
+      tl.fromTo("#in-ghost", { opacity: 0, scale: 1.04, transformOrigin: "50% 50%" }, { opacity: 0.14, scale: 1, duration: 1.1, ease: "power3.out" }, 1.0);
+      draw("#in-axis", 2.3, 1.4);
+
+      /* ---- Scene 2 (4.0–9.0) : 정거장 6개가 waterfall 로 ---- */
+      var t = 4.1;
+      for (var i = 0; i < 6; i++) {
+        var travel = i === 0 ? 36 : 26;
+        var dur = i === 0 ? 0.2 : 0.16;
+        tl.set("#in-n" + i, { opacity: 1, y: travel }, t);
+        tl.to("#in-n" + i, { y: 0, duration: dur, ease: "power4.out" }, t);
+        tl.fromTo("#in-s" + i, { opacity: 0 }, { opacity: 1, duration: 0.26, ease: "power2.out" }, t + 0.12);
+        t = t + dur + 0.42;
+      }
+
+      /* ---- Scene 3 (9.0–14.0) : 점 하나가 정거장을 지나간다 ---- */
+      tl.fromTo("#in-dot", { opacity: 0, attr: { cx: 150 } }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 9.0);
+      var stops = [150, 440, 730, 1020, 1310, 1600, 1770];
+      var lights = ["#in-n0", "#in-n1", "#in-n2", "#in-n3", "#in-n4", "#in-n5"];
+      var at = 9.3;
+      for (var k = 0; k < 6; k++) {
+        tl.to("#in-dot", { attr: { cx: stops[k] }, duration: 0.32, ease: "power2.inOut" }, at);
+        tl.to(lights[k], { borderColor: "#0B57D0", backgroundColor: "rgba(11,87,208,0.14)", duration: 0.2, ease: "power2.out" }, at + 0.26);
+        tl.to(lights[k], { borderColor: "rgba(11,87,208,0.2)", backgroundColor: "rgba(11,87,208,0.04)", duration: 0.4, ease: "power2.inOut" }, at + 0.66);
+        /* 입력 태스크에서 잠시 머문다 — 채터링을 거르는 곳 */
+        at += (k === 3) ? 1.9 : 0.52;
+        if (k === 3) {
+          tl.fromTo("#in-chatter", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at - 1.7);
+          draw("#in-dirty", at - 1.55, 0.6);
+          tl.to("#in-dirty", { opacity: 1, duration: 0.2, ease: "power2.out" }, at - 1.55);
+          draw("#in-clean", at - 0.85, 0.55);
+          tl.to("#in-clean", { opacity: 1, duration: 0.2, ease: "power2.out" }, at - 0.85);
+        }
+      }
+
+      /* ---- Scene 4 (14.0–20.0) : USB 에 도달, 결론 ---- */
+      tl.to("#in-dot", { attr: { cx: 1770 }, duration: 0.5, ease: "power2.in" }, 14.2);
+      tl.to("#in-dot", { opacity: 0, duration: 0.25, ease: "power2.in" }, 14.7);
+      tl.fromTo("#in-result", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 15.1);
+      /* 파이프라인 전체가 한 번 얕게 밝아졌다가 정지 */
+      tl.to(".in-node", { borderColor: "rgba(11,87,208,0.45)", duration: 0.45, stagger: 0.05, ease: "power2.out" }, 16.0);
+      tl.to(".in-node", { borderColor: "rgba(11,87,208,0.2)", duration: 0.7, stagger: 0.05, ease: "power2.inOut" }, 16.9);
+
+      window.__timelines["05-inside"] = tl;
+    })();
+  </script>
+</template>

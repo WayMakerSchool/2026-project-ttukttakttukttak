@@ -1,0 +1,268 @@
+<template>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    /* Cloned <style> resolves url() against the HOST document (project root),
+       so every asset path here is root-relative — never ../ (lint: error). */
+    @font-face {
+      font-family: "Gothic A1";
+      src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+      font-weight: 700 800;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      src: url("assets/fonts/JetBrainsMono.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+    }
+
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      background: transparent;
+      font-family: "Gothic A1", sans-serif;
+      color: #101418;
+    }
+
+    /* full-bleed ground rides on its own clip layer, never on #root */
+    #f06-bg { position: absolute; inset: 0; background: #F7F9FC; }
+
+    /* Static stage. The hoisted clips paint ABOVE every frame element, so nothing
+       here may sit over a screen rectangle — the bezels surround it, the cobalt
+       bar stops at the bezel, and the ring only ever grows outward from it. */
+    #f06-stage { position: absolute; inset: 0; }
+
+    /* ---- left cluster: the physical device + its 1번 annotation ---- */
+    #f06-left { position: absolute; left: 88px; top: 310px; width: 740px; height: 390px; }
+    #f06-board { position: absolute; left: 8px; top: 80px; width: 720px; height: 300px; }
+    #f06-board svg { display: block; width: 720px; height: 300px; }
+    #f06-btn1 { transform-box: fill-box; transform-origin: 50% 50%; }
+    #f06-badge {
+      position: absolute; left: 52px; top: 8px;
+      background: #0B57D0; color: #F7F9FC;
+      border: 8px solid #101418; border-radius: 0;
+      padding: 6px 26px 10px;
+      font-weight: 800; font-size: 42px; font-size: 2.2cqw; line-height: 1;
+      opacity: 0;
+    }
+
+    /* cobalt bloom rings — flat hard-edged rings, zero blur / zero gradient */
+    .f06-ring {
+      position: absolute; left: 136px; top: 450px; width: 160px; height: 160px;
+      border-radius: 50%; background: none; opacity: 0;
+    }
+    #f06-ring1 { border: 12px solid #0B57D0; }
+    #f06-ring2 { border: 6px solid #0B57D0; }
+
+    /* the bloom crossing the gap: leaves the board, stops dead at bezel A */
+    #f06-link {
+      position: absolute; left: 216px; top: 526px; width: 1038px; height: 8px;
+      background: #0B57D0; transform-origin: 0% 50%; opacity: 0;
+    }
+
+    /* ---- the two screen bezels. Each border ring sits entirely OUTSIDE its
+           hoisted clip rectangle, so the video never covers the frame. ---- */
+    .f06-bezel {
+      position: absolute; border: 8px solid #101418; border-radius: 0;
+      box-sizing: border-box; background: #F7F9FC;
+    }
+    /* A — Scene 1/2, clip rect 1262,148 317x644 */
+    #f06-bezelA { left: 1254px; top: 140px; width: 333px; height: 660px; }
+    /* B — Scene 3/4, clip rect 738,8 443x878 */
+    #f06-bezelB { left: 730px; top: 0; width: 459px; height: 894px; opacity: 0; }
+
+    /* cobalt pulse ring, 12px outside bezel A and only ever growing outward */
+    #f06-pulse {
+      position: absolute; left: 1242px; top: 128px; width: 357px; height: 684px;
+      border: 10px solid #0B57D0; border-radius: 0; box-sizing: border-box;
+      background: none; opacity: 0;
+    }
+
+    /* tail still: the clip ends at 7.20s, this holds bezel B's rectangle to 7.50s */
+    #f06-still {
+      position: absolute; left: 738px; top: 8px; width: 443px; height: 878px;
+      object-fit: cover; object-position: 50% 50%; display: block;
+    }
+
+    /* ---- chrome + claim, both clear of the clip rectangles ---- */
+    #f06-chrome {
+      position: absolute; left: 96px; top: 56px; height: 46px;
+      display: flex; align-items: center; gap: 32px; opacity: 0;
+    }
+    #f06-topline {
+      font-family: "JetBrains Mono", monospace; font-weight: 400;
+      font-size: 24px; font-size: 1.25cqw; letter-spacing: 0.14em; color: #101418;
+    }
+    #f06-pill {
+      font-family: "JetBrains Mono", monospace; font-weight: 400;
+      font-size: 24px; font-size: 1.25cqw; letter-spacing: 0.06em; color: #101418;
+      border: 4px solid #101418; border-radius: 999px; padding: 4px 24px 6px;
+      background: #F7F9FC;
+    }
+    .f06-word {
+      position: absolute;
+      font-family: "Gothic A1", sans-serif; font-weight: 800;
+      font-size: 148px; font-size: 7.7cqw;
+      line-height: 0.9; letter-spacing: -0.01em; white-space: nowrap; opacity: 0;
+    }
+    /* the claim stacks in the left cream field — the hoisted clip paints above
+       every frame element, so no word may cross the screen rectangle. */
+    #f06-w1 { left: 96px; top: 330px; color: #101418; }
+    #f06-w2 { left: 96px; top: 463px; color: #0B57D0; }
+  </style>
+
+  <div
+    id="root"
+    data-composition-id="06-press-opens"
+    data-start="0"
+    data-duration="7.5"
+    data-width="1920"
+    data-height="1080"
+  >
+    <div id="f06-bg" class="clip" data-start="0" data-duration="7.5" data-track-index="0"></div>
+
+    <div id="f06-stage" data-layout-allow-overflow>
+      <div id="f06-link"></div>
+
+      <div id="f06-left">
+        <div id="f06-board">
+          <svg viewBox="0 0 360 150" role="img" aria-label="vibekey device">
+            <g id="f06-shadow" opacity="0.10">
+              <rect x="9" y="23" width="350" height="106" rx="20" fill="#000000" />
+            </g>
+            <rect id="f06-body" x="5" y="15" width="350" height="110" rx="20" fill="#1E293B" stroke="#475569" stroke-width="3" />
+            <rect id="f06-trim" x="100" y="28" width="160" height="12" fill="#334155" />
+            <rect id="f06-usb" x="160" y="125" width="40" height="20" rx="6" fill="#94A3B8" />
+            <g id="f06-btn1">
+              <circle cx="60" cy="70" r="30" fill="#0B57D0" stroke="#083F9B" stroke-width="3" />
+              <circle cx="60" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+            </g>
+            <g id="f06-btn2">
+              <circle cx="180" cy="70" r="30" fill="#12703A" stroke="#0B4F27" stroke-width="3" />
+              <circle cx="180" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+            </g>
+            <g id="f06-btn3">
+              <circle cx="300" cy="70" r="30" fill="#B26A00" stroke="#8A5200" stroke-width="3" />
+              <circle cx="300" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+            </g>
+          </svg>
+        </div>
+        <div id="f06-badge">1번</div>
+      </div>
+
+      <div id="f06-ring1" class="f06-ring"></div>
+      <div id="f06-ring2" class="f06-ring"></div>
+
+      <div id="f06-bezelA" class="f06-bezel"></div>
+      <div id="f06-bezelB" class="f06-bezel"></div>
+      <div id="f06-pulse"></div>
+
+      <img
+        id="f06-still"
+        class="clip"
+        src="assets/still-press-end.png"
+        alt=""
+        data-start="7.15"
+        data-duration="0.35"
+        data-track-index="3"
+      />
+
+      <video id="f06-clipA" src="assets/clip-press.mp4" muted playsinline preload="auto"
+        data-start="0" data-duration="3.3" data-media-start="0" data-track-index="1"
+        data-frame-video="approved" data-frame-video-x="1262" data-frame-video-y="148"
+        data-frame-video-width="317" data-frame-video-height="644" data-frame-video-fit="cover"></video>
+      <video id="f06-clipB" src="assets/clip-press.mp4" muted playsinline preload="auto"
+        data-start="3.3" data-duration="3.9" data-media-start="3.3" data-track-index="1"
+        data-frame-video="approved" data-frame-video-x="738" data-frame-video-y="8"
+        data-frame-video-width="443" data-frame-video-height="878" data-frame-video-fit="cover"></video>
+    </div>
+
+    <div id="f06-chrome">
+      <div id="f06-topline">VIBEKEY · LIVE CAPTURE</div>
+      <div id="f06-pill">06 / 09</div>
+    </div>
+
+    <div id="f06-w1" class="f06-word">누르면</div>
+    <div id="f06-w2" class="f06-word">열립니다</div>
+  </div>
+
+  <script>
+    (function () {
+      // Real moments inside clip-press.mp4, played at real time (the hoist drops
+      // data-playback-rate), so source seconds == frame seconds for clip A and
+      // clip B alike (B's data-media-start equals its data-start):
+      //   0.00–1.03 home · 1.03–1.20 the tap lands · 1.20–3.30 the "1번 버튼"
+      //   dialog · 3.30–3.95 dismiss · 3.95–4.60 launch flash · 4.60–5.20 the
+      //   Phone app draws in · 5.20–7.20 fully rendered, then the tail still.
+      var TCUT = 3.3; // the punch-in: small rect -> large rect, one hard cut
+      var T4 = 5.4;
+      var PULSE = 0.5;
+      var BEATS = [T4, T4 + PULSE];
+
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---------- Scene 1 (0.00–1.20) — the physical press ---------- */
+      // press-release-spring: linear compression, spring release at exactly
+      // PRESS_START + PRESS_DUR so the two tweens thread their state.
+      tl.fromTo("#f06-btn1", { y: 0, scale: 1 },
+        { y: 8, scale: 0.88, duration: 0.14, ease: "power1.in" }, 0.36);
+      tl.to("#f06-btn1", { y: 0, scale: 1, duration: 0.52, ease: "back.out(2.2)" }, 0.5);
+
+      // one cobalt bloom spreading from btn1 on the release (flat rings, no glow)
+      tl.fromTo("#f06-ring1", { scale: 0.35, opacity: 1 },
+        { scale: 3.6, opacity: 0, duration: 0.9, ease: "power2.out", immediateRender: false }, 0.5);
+      tl.fromTo("#f06-ring2", { scale: 0.35, opacity: 0.8 },
+        { scale: 2.3, opacity: 0, duration: 0.66, ease: "power2.out", immediateRender: false }, 0.64);
+
+      tl.fromTo("#f06-badge", { scale: 0.6, rotation: -16, opacity: 0 },
+        { scale: 1, rotation: -4, opacity: 1, duration: 0.46, ease: "back.out(1.9)", immediateRender: false }, 0.62);
+
+      tl.fromTo("#f06-chrome", { y: -14, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 0.06);
+
+      /* ---------- Scene 2 (1.20–3.30) — the bloom crosses, the dialog lands ---------- */
+      // 목적지에 opacity 를 반드시 적는다. 콜드 렌더 워커는 CSS 에 적힌 숨김 상태
+      // (opacity:0) 를 되살리기 때문에, 목적지에 없으면 렌더에서만 안 보인다.
+      tl.fromTo("#f06-link", { scaleX: 0, opacity: 1 },
+        { scaleX: 1, opacity: 1, duration: 0.45, ease: "power3.out", immediateRender: false }, 0.95);
+      tl.to("#f06-link", { opacity: 0, duration: 0.34, ease: "power2.in" }, 1.5);
+      tl.fromTo("#f06-pulse", { scale: 1, opacity: 0.9 },
+        { scale: 1.16, opacity: 0, duration: 0.7, ease: "power2.out", immediateRender: false }, 1.18);
+
+      // the device hands the shot over before the cut. The hard kill on the
+      // 3.30s clip boundary keeps a non-linear seek from restoring stale state.
+      tl.to("#f06-left", { opacity: 0, duration: 1.0, ease: "power2.inOut" }, 2.25);
+      tl.set("#f06-left", { opacity: 0 }, TCUT);
+
+      /* ---------- Scene 3 (3.30–5.40) — the punch-in cut; no text at all ---------- */
+      // one-frame bezel swap, timed to the frame where the hoisted clips swap
+      // rectangles, so the ink frame always matches the live screen exactly.
+      tl.to("#f06-bezelA", { opacity: 0, duration: 0.02, ease: "none" }, TCUT - 0.02);
+      tl.set("#f06-bezelA", { opacity: 0 }, TCUT);
+      tl.fromTo("#f06-bezelB", { opacity: 0 },
+        { opacity: 1, duration: 0.02, ease: "none", immediateRender: false }, TCUT - 0.02);
+
+      /* ---------- Scene 4 (5.40–7.50) — two beats on one pulse grid ---------- */
+      tl.fromTo("#f06-w1", { scale: 1.42, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.42, ease: "power4.out", immediateRender: false }, BEATS[0]);
+      tl.fromTo("#f06-w2", { y: 96, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: "circ.out", immediateRender: false }, BEATS[1]);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["06-press-opens"] = tl;
+    })();
+  </script>
+</template>

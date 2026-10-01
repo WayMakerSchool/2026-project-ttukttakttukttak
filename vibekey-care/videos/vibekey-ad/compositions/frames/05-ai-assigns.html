@@ -1,0 +1,463 @@
+<template>
+  <style>
+    /* ---- fonts: embedded from disk, never fetched ------------------------
+       Root-relative paths only: compositions are served with the project root
+       as their base URL, and the runtime appends sub-composition styles to
+       document.head without rebasing url(). */
+    @font-face {
+      font-family: "Gothic A1";
+      font-weight: 800;
+      font-style: normal;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-weight: 700;
+      font-style: normal;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Noto Sans KR";
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+      src:
+        url("assets/fonts/NotoSansKR.ttf") format("truetype");
+    }
+
+    /* ---- frame root ---------------------------------------------------- */
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      container-type: size;
+      /* the container law: every length below is authored in cqw.
+         1px @1920 == 1/19.2 cqw. */
+      --px: 0.0520833cqw;
+      --cream: #f7f9fc;
+      --ink: #101418;
+      --ink2: #2a2a2a;
+      --cobalt: #0b57d0;
+      --green: #12703a;
+      --amber: #b26a00;
+      --violet: #8a2be2;
+      font-family: "Gothic A1", "Noto Sans KR", sans-serif;
+    }
+
+    /* full-bleed ground lives on a clip layer, never on #root */
+    .f05-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--cream);
+    }
+
+    .f05-stage {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ---- headline ------------------------------------------------------ */
+    .f05-head {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(64 * var(--px));
+      text-align: center;
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: calc(84.5 * var(--px));
+      line-height: 0.92;
+      letter-spacing: -0.01em;
+      color: var(--violet);
+    }
+
+    /* ---- supporting product vector (colour ladder) --------------------- */
+    .f05-board {
+      position: absolute;
+      left: calc(96 * var(--px));
+      top: calc(48 * var(--px));
+      width: calc(340 * var(--px));
+      height: calc(141.667 * var(--px));
+    }
+    .f05-board svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ---- the phone: real app recording held as the hero surface --------
+       STATIC for the whole frame. The recording is hoisted to the host root
+       by assemble-index and pinned to the screen rectangle in host pixels
+       (774.375 / 189 / 371.25 x 660), so the bezel must never move or the
+       two would drift apart. Nothing may be drawn on that rectangle either:
+       the hoisted clip paints above every frame element. Everything this
+       frame draws therefore lives on the bezel or outside it. --------- */
+    .f05-phone {
+      position: absolute;
+      left: calc(753.375 * var(--px));
+      top: calc(168 * var(--px));
+      width: calc(413.25 * var(--px));
+      height: calc(702 * var(--px));
+      background: var(--ink);
+    }
+    .f05-screen {
+      position: absolute;
+      left: calc(21 * var(--px));
+      top: calc(21 * var(--px));
+      width: calc(371.25 * var(--px));
+      height: calc(660 * var(--px));
+      overflow: hidden;
+      background: var(--cream);
+    }
+    /* the settled state, held after the clip unmounts at 3.0s */
+    .f05-screen img.clip {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* a coloured tab on the bezel, level with the row the card came from —
+       the only mark this frame can leave on the phone, and what each
+       connector lands on. */
+    .f05-tab {
+      position: absolute;
+      width: calc(21 * var(--px));
+    }
+    .f05-t1 {
+      left: 0;
+      top: calc(130.66 * var(--px));
+      height: calc(100.72 * var(--px));
+      background: var(--cobalt);
+    }
+    .f05-t2 {
+      left: calc(392.25 * var(--px));
+      top: calc(259.56 * var(--px));
+      height: calc(100.72 * var(--px));
+      background: var(--green);
+    }
+    .f05-t3 {
+      left: calc(392.25 * var(--px));
+      top: calc(388.13 * var(--px));
+      height: calc(72.88 * var(--px));
+      background: var(--amber);
+    }
+
+    /* ---- the three rows, pulled out and stood up as cards -------------- */
+    .f05-card {
+      position: absolute;
+      width: calc(580 * var(--px));
+      height: calc(300 * var(--px));
+      background: var(--cream);
+      border: calc(7.68 * var(--px)) solid var(--ink);
+      padding: calc(32 * var(--px));
+      display: flex;
+      align-items: stretch;
+      gap: calc(28 * var(--px));
+    }
+    .f05-c1 {
+      left: calc(96 * var(--px));
+      top: calc(350 * var(--px));
+    }
+    .f05-c2 {
+      left: calc(1244 * var(--px));
+      top: calc(186 * var(--px));
+    }
+    .f05-c3 {
+      left: calc(1244 * var(--px));
+      top: calc(556 * var(--px));
+    }
+    .f05-bar {
+      flex: 0 0 calc(22 * var(--px));
+    }
+    .f05-txt {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .f05-kicker {
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: calc(38.4 * var(--px));
+      line-height: 1;
+    }
+    .f05-name {
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: calc(80.6 * var(--px));
+      line-height: 0.92;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-top: calc(10 * var(--px));
+    }
+    .f05-why {
+      margin-top: calc(18 * var(--px));
+      padding: calc(12 * var(--px)) calc(18 * var(--px));
+      font-family: "Gothic A1", "Noto Sans KR", sans-serif;
+      font-weight: 400;
+      font-size: calc(26 * var(--px));
+      line-height: 1.3;
+      color: var(--ink2);
+      white-space: nowrap;
+    }
+    .f05-c1 .f05-bar {
+      background: var(--cobalt);
+    }
+    .f05-c1 .f05-kicker {
+      color: var(--cobalt);
+    }
+    .f05-c1 .f05-why {
+      background: #e4ecfa;
+    }
+    .f05-c2 .f05-bar {
+      background: var(--green);
+    }
+    .f05-c2 .f05-kicker {
+      color: var(--green);
+    }
+    .f05-c2 .f05-why {
+      background: #e3efe8;
+    }
+    .f05-c3 .f05-bar {
+      background: var(--amber);
+    }
+    .f05-c3 .f05-kicker {
+      color: var(--amber);
+    }
+    .f05-c3 .f05-why {
+      background: #f6ede0;
+    }
+
+    /* ---- connectors: card -> the phone's outer edge at that row's height */
+    .f05-lines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .f05-lines path {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+
+  <div
+    id="root"
+    data-composition-id="05-ai-assigns"
+    data-width="1920"
+    data-height="1080"
+  >
+    <div
+      id="f05-ground"
+      class="clip f05-bg"
+      data-start="0"
+      data-duration="7"
+      data-track-index="0"
+    ></div>
+
+    <div class="f05-stage">
+      <!-- supporting: the product's own vector. Its three buttons are the
+           same cobalt / green / amber as the rows, and light up in order. -->
+      <div class="f05-board" id="f05-board">
+        <svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vibekey device">
+          <g opacity="0.10">
+            <rect x="9" y="23" width="350" height="106" rx="20" fill="#000000" />
+          </g>
+          <rect x="5" y="15" width="350" height="110" rx="20" fill="#1E293B" stroke="#475569" stroke-width="3" />
+          <rect x="100" y="28" width="160" height="12" fill="#334155" />
+          <rect x="160" y="125" width="40" height="20" rx="6" fill="#94A3B8" />
+          <g id="f05-b1">
+            <circle cx="60" cy="70" r="30" fill="#0B57D0" stroke="#083F9B" stroke-width="3" />
+            <circle cx="60" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+          <g id="f05-b2">
+            <circle cx="180" cy="70" r="30" fill="#12703A" stroke="#0B4F27" stroke-width="3" />
+            <circle cx="180" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+          <g id="f05-b3">
+            <circle cx="300" cy="70" r="30" fill="#B26A00" stroke="#8A5200" stroke-width="3" />
+            <circle cx="300" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+        </svg>
+      </div>
+
+      <!-- hero surface, static. The recording is declared for hoisting; the
+           still takes over the same rectangle the moment the clip ends. -->
+      <div class="f05-phone" id="f05-phone">
+        <div class="f05-screen">
+          <video id="f05-clip" src="assets/clip-result-crop.mp4" muted playsinline preload="auto"
+            data-start="0" data-duration="3" data-media-start="0" data-track-index="1"
+            data-frame-video="approved" data-frame-video-x="774.375" data-frame-video-y="189"
+            data-frame-video-width="371.25" data-frame-video-height="660" data-frame-video-fit="cover"></video>
+          <img
+            id="f05-still"
+            class="clip"
+            src="assets/still-result-end.png"
+            alt=""
+            data-start="3"
+            data-duration="4"
+            data-track-index="2"
+          />
+        </div>
+        <div class="f05-tab f05-t1" id="f05-tab1"></div>
+        <div class="f05-tab f05-t2" id="f05-tab2"></div>
+        <div class="f05-tab f05-t3" id="f05-tab3"></div>
+      </div>
+
+      <div class="f05-card f05-c1" id="f05-card1">
+        <div class="f05-bar"></div>
+        <div class="f05-txt">
+          <div class="f05-kicker">1번 단추</div>
+          <div class="f05-name">Phone</div>
+          <div class="f05-why" id="f05-why1">'전화 걸기'를 고르셔서 넣었어요.</div>
+        </div>
+      </div>
+
+      <div class="f05-card f05-c2" id="f05-card2">
+        <div class="f05-bar"></div>
+        <div class="f05-txt">
+          <div class="f05-kicker">2번 단추</div>
+          <div class="f05-name">Maps</div>
+          <div class="f05-why" id="f05-why2">'길 찾기'를 고르셔서 넣었어요.</div>
+        </div>
+      </div>
+
+      <div class="f05-card f05-c3" id="f05-card3">
+        <div class="f05-bar"></div>
+        <div class="f05-txt">
+          <div class="f05-kicker">3번 단추</div>
+          <div class="f05-name">Photos</div>
+          <div class="f05-why" id="f05-why3">'사진 보기'를 고르셔서 넣었어요.</div>
+        </div>
+      </div>
+
+      <svg class="f05-lines" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path id="f05-l1" d="M 676 500 L 753 349" stroke="#0B57D0" />
+        <path id="f05-l2" d="M 1244 336 L 1167 478" stroke="#12703A" />
+        <path id="f05-l3" d="M 1244 706 L 1167 593" stroke="#B26A00" />
+        <circle id="f05-d1a" cx="676" cy="500" r="9" fill="#0B57D0" />
+        <circle id="f05-d1b" cx="753" cy="349" r="9" fill="#0B57D0" />
+        <circle id="f05-d2a" cx="1244" cy="336" r="9" fill="#12703A" />
+        <circle id="f05-d2b" cx="1167" cy="478" r="9" fill="#12703A" />
+        <circle id="f05-d3a" cx="1244" cy="706" r="9" fill="#B26A00" />
+        <circle id="f05-d3b" cx="1167" cy="593" r="9" fill="#B26A00" />
+      </svg>
+
+      <div class="f05-head" id="f05-head">AI가 단추를 정합니다</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* Scene 1 (0.0-1.4s) — the surface is already held (its own screen is
+         scrolling into the settled result under us). The entrance is carried
+         beside it: the claim lands, then the little product board. */
+      tl.fromTo(
+        "#f05-head",
+        { opacity: 0, y: 26, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.5)" },
+        0.28,
+      );
+      tl.fromTo(
+        "#f05-board",
+        { opacity: 0, y: -22 },
+        { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        0.62,
+      );
+
+      /* Scenes 2-4 — each row is pulled OUT of the phone and stood up large.
+         Every card starts life at its row's position and size inside the
+         screen (335.5 / 580 = 0.5784) and grows into place; a same-coloured
+         tab stays behind on the bezel at that row's height, and the matching
+         button on the product board lights up. */
+      var pulls = [
+        { card: "#f05-card1", tab: "#f05-tab1", btn: "#f05-b1", why: "#f05-why1", x: 574, y: -151.0, t: 1.42 },
+        { card: "#f05-card2", tab: "#f05-tab2", btn: "#f05-b2", why: "#f05-why2", x: -574, y: 141.9, t: 3.02 },
+        { card: "#f05-card3", tab: "#f05-tab3", btn: "#f05-b3", why: "#f05-why3", x: -574, y: -113.4, t: 4.42 },
+      ];
+      pulls.forEach(function (p) {
+        tl.fromTo(
+          p.tab,
+          { opacity: 0, scaleY: 0.35 },
+          { opacity: 1, scaleY: 1, duration: 0.34, ease: "power2.out" },
+          p.t,
+        );
+        tl.fromTo(
+          p.btn,
+          { opacity: 0.2 },
+          { opacity: 1, duration: 0.34, ease: "power1.out" },
+          p.t + 0.08,
+        );
+        tl.fromTo(
+          p.card,
+          { x: p.x, y: p.y, scale: 0.5784, opacity: 0 },
+          { x: 0, y: 0, scale: 1, opacity: 1, duration: 0.82, ease: "power3.out" },
+          p.t + 0.13,
+        );
+        tl.fromTo(
+          p.why,
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" },
+          p.t + 1.03,
+        );
+      });
+
+      /* Scene 5 (5.6-7.0s) — svg-path-draw: one same-coloured line per card,
+         drawn from the card's edge to the phone's outer edge, landing on the
+         bezel tab of the row it came from, 0.15s apart. Length is measured,
+         never guessed. Then the shot rests. */
+      var draws = [
+        { id: "#f05-l1", dots: ["#f05-d1a", "#f05-d1b"], at: 5.62 },
+        { id: "#f05-l2", dots: ["#f05-d2a", "#f05-d2b"], at: 5.77 },
+        { id: "#f05-l3", dots: ["#f05-d3a", "#f05-d3b"], at: 5.92 },
+      ];
+      draws.forEach(function (d) {
+        var path = document.querySelector(d.id);
+        var len = 180;
+        if (path && typeof path.getTotalLength === "function") {
+          try {
+            len = path.getTotalLength() * 1.02;
+          } catch (e) {
+            len = 180;
+          }
+          path.style.strokeDasharray = String(len);
+          path.style.strokeDashoffset = String(len);
+        }
+        tl.fromTo(
+          d.id,
+          { strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: 0.55, ease: "power2.out" },
+          d.at,
+        );
+        tl.fromTo(
+          d.dots,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.3, ease: "power1.out" },
+          d.at + 0.43,
+        );
+      });
+
+      window.__timelines["05-ai-assigns"] = tl;
+    })();
+  </script>
+</template>

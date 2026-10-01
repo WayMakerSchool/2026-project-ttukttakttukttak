@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_m">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBack"
+                style="@style/VkButton.Outline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/back"
+                app:icon="@drawable/ic_back"
+                app:iconGravity="textStart" />
+
+            <TextView
+                style="@style/VkText.Title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_s"
+                android:layout_weight="1"
+                android:text="@string/settings_title"
+                android:textSize="@dimen/text_huge" />
+        </LinearLayout>
+
+        <!-- AI 설정 -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="@string/settings_ai_section" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_api_key"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/apiKeyStatus"
+                style="@style/VkText.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="" />
+
+            <EditText
+                android:id="@+id/apiKeyInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:autofillHints=""
+                android:background="@drawable/bg_input"
+                android:hint="@string/settings_api_key_hint"
+                android:inputType="textVisiblePassword"
+                android:minHeight="@dimen/touch_min"
+                android:padding="@dimen/space_s"
+                android:textColor="@color/vk_text"
+                android:textColorHint="@color/vk_text_secondary"
+                android:textSize="@dimen/text_label" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveKey"
+                    style="@style/VkButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="@string/settings_api_key_save" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTestKey"
+                    style="@style/VkButton.Outline"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_xs"
+                    android:layout_weight="1"
+                    android:text="@string/settings_api_key_test" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/apiKeyHelp"
+                style="@style/VkText.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="키는 구글 AI 스튜디오(aistudio.google.com)에서 무료로 받을 수 있어요. 키는 이 휴대폰 안에만 저장됩니다." />
+        </LinearLayout>
+
+        <!-- 쓰기 편하게 -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="@string/settings_ux_section" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_s">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchVoice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_min"
+                android:padding="@dimen/space_s"
+                android:text="@string/settings_voice"
+                android:textColor="@color/vk_text"
+                android:textSize="@dimen/text_body" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchVibrate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_min"
+                android:padding="@dimen/space_s"
+                android:text="@string/settings_vibrate"
+                android:textColor="@color/vk_text"
+                android:textSize="@dimen/text_body" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchBigger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_min"
+                android:padding="@dimen/space_s"
+                android:text="@string/settings_bigger"
+                android:textColor="@color/vk_text"
+                android:textSize="@dimen/text_body" />
+        </LinearLayout>
+
+        <!-- 삼성 루틴 -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="@string/settings_routine_section" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_s">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchRoutine"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_min"
+                android:padding="@dimen/space_s"
+                android:text="버튼을 누르면 루틴에 알리기"
+                android:textColor="@color/vk_text"
+                android:textSize="@dimen/text_body" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenRoutine"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/space_s"
+                android:text="@string/routine_title"
+                app:icon="@drawable/ic_routine"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- 테스트(자가진단) -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="@string/test_title" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="잘 되고 있는지 한 번에 검사하고, 기기 없이도 버튼을 눌러 볼 수 있어요." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDiagnostics"
+                style="@style/VkButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="@string/test_open"
+                app:icon="@drawable/ic_check"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRedoOnboarding"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="@string/settings_onboard_again"
+                app:icon="@drawable/ic_sparkle"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- 권한 -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="@string/settings_permission_section" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_s">
+
+            <TextView
+                android:id="@+id/overlayStatus"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/space_s"
+                android:text="" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOverlayPermission"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/space_s"
+                android:text="다른 앱 위에 표시 권한 열기" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBatteryPermission"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/space_s"
+                android:text="배터리 절약 예외로 두기" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/space_xl" />
+    </LinearLayout>
+</ScrollView>

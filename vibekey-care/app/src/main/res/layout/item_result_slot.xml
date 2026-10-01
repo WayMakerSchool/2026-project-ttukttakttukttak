@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AI가 정한 결과를 단추 하나마다 한 줄로 보여 줍니다.
+
+    "몇 번 단추 → 어떤 앱 → 왜"를 위에서 아래로 읽히게 두어,
+    글을 천천히 읽으셔도 순서대로 이해되게 했습니다.
+    왼쪽 색 막대는 기기 그림의 단추 색과 같아서 어느 단추인지 바로 짚을 수 있습니다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_s"
+    android:background="@drawable/bg_card"
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/touch_big"
+    android:orientation="horizontal"
+    android:padding="@dimen/space_s">
+
+    <View
+        android:id="@+id/resultBar"
+        android:layout_width="8dp"
+        android:layout_height="64dp"
+        android:layout_marginEnd="@dimen/space_s"
+        android:background="@color/vk_slot_1" />
+
+    <ImageView
+        android:id="@+id/resultIcon"
+        android:layout_width="@dimen/app_icon"
+        android:layout_height="@dimen/app_icon"
+        android:layout_marginEnd="@dimen/space_s"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_apps" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/resultSlot"
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/resultApp"
+            style="@style/VkText.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2" />
+
+        <TextView
+            android:id="@+id/resultReason"
+            style="@style/VkText.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:background="@drawable/bg_reason"
+            android:paddingStart="@dimen/space_s"
+            android:paddingTop="@dimen/space_xs"
+            android:paddingEnd="@dimen/space_s"
+            android:paddingBottom="@dimen/space_xs"
+            android:textSize="17sp" />
+    </LinearLayout>
+</LinearLayout>

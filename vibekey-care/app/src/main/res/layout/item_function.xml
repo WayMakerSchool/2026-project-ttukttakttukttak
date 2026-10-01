@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    첫 설정에서 고르는 "자주 하는 일" 칸 하나입니다.
+
+    어르신 사용성을 위해
+     · 그림을 크게(56dp) 두어 글을 못 읽으셔도 무엇인지 알 수 있게 하고
+     · 고르면 테두리가 굵어지고 동그란 체크가 붙어 "골랐다"는 것이 확실히 보이게 했습니다.
+     · 칸 전체가 눌리는 곳이라 손이 떨려도 빗나가지 않습니다. (110dp 이상)
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/functionCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card"
+    android:clickable="true"
+    android:focusable="true"
+    android:minHeight="110dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/space_xs"
+        android:paddingTop="@dimen/space_s"
+        android:paddingEnd="@dimen/space_xs"
+        android:paddingBottom="@dimen/space_s">
+
+        <ImageView
+            android:id="@+id/functionIcon"
+            android:layout_width="@dimen/app_icon"
+            android:layout_height="@dimen/app_icon"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_apps"
+            app:tint="@color/vk_text_secondary" />
+
+        <TextView
+            android:id="@+id/functionName"
+            style="@style/VkText.Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_xs"
+            android:gravity="center"
+            android:maxLines="2"
+            android:text="@string/onboard_pick_title"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 고르면 나타나는 동그란 체크 -->
+    <ImageView
+        android:id="@+id/functionCheck"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="@dimen/space_xs"
+        android:background="@drawable/bg_check_circle"
+        android:contentDescription="@string/onboard_selected"
+        android:padding="5dp"
+        android:src="@drawable/ic_check"
+        android:visibility="gone"
+        app:tint="@color/vk_white" />
+</FrameLayout>

@@ -1,0 +1,354 @@
+<template>
+  <style>
+    /* ── fonts: embedded from disk, never fetched ───────────────────────────
+       The cloned <style> resolves url() against the HOST document (project
+       root), so the project-root path comes first; the frames-relative path
+       is kept as a fallback source. */
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 800;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 700;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src:
+        url("assets/fonts/JetBrainsMono.ttf") format("truetype");
+    }
+
+    /* ── root (styled by #root, never by a class) ──────────────────────────── */
+    #root {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    /* ── full-bleed ground: a clip layer, not the root ─────────────────────── */
+    .f03-ground {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      background: #f7f9fc;
+    }
+
+    .f03-stage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      container-type: size;
+      color: #101418;
+    }
+
+    /* ── frame chrome ─────────────────────────────────────────────────────── */
+    .f03-topbar {
+      position: absolute;
+      left: 64px;
+      right: 64px;
+      top: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 24px;
+      font-size: 1.25cqw;
+      letter-spacing: 0.14em;
+      color: #101418;
+      will-change: transform;
+    }
+    .f03-pill {
+      border: 4px solid #101418;
+      border: 0.2cqw solid #101418;
+      border-radius: 999px;
+      padding: 8px 26px;
+      letter-spacing: 0.14em;
+      background: #f7f9fc;
+      will-change: transform;
+    }
+
+    .f03-meta {
+      position: absolute;
+      left: 64px;
+      right: 64px;
+      top: 848px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 400;
+      font-size: 24px;
+      font-size: 1.25cqw;
+      letter-spacing: 0.06em;
+      color: #101418;
+    }
+    .f03-count {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      letter-spacing: 0.06em;
+    }
+    .f03-dot {
+      width: 10px;
+      height: 10px;
+      width: 0.5cqw;
+      height: 0.5cqw;
+      border-radius: 50%;
+      background: #101418;
+    }
+
+    /* ── headline (Scene 4) ───────────────────────────────────────────────── */
+    .f03-headline {
+      position: absolute;
+      margin: 0;
+      left: 96px;
+      right: 96px;
+      top: 186px;
+      text-align: center;
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: 115px;
+      font-size: 6cqw;
+      line-height: 0.92;
+      letter-spacing: -0.01em;
+      color: #101418;
+      will-change: transform;
+    }
+
+    /* ── device (the focal asset) ─────────────────────────────────────────── */
+    .f03-device {
+      position: absolute;
+      left: 432px;
+      top: 340px;
+      width: 1056px;
+      height: 440px;
+      will-change: transform;
+    }
+    .f03-device svg {
+      display: block;
+      width: 1056px;
+      height: 440px;
+    }
+
+    /* ── the button→stem linking device (Scene 3) ─────────────────────────── */
+    .f03-stems {
+      position: absolute;
+      left: 432px;
+      top: 340px;
+      width: 1056px;
+      height: 557.33px;
+      pointer-events: none;
+    }
+    /* scale each part about its own centre (bbox), never the svg origin */
+    #f03-detail,
+    #f03-btn1,
+    #f03-btn2,
+    #f03-btn3 {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+    }
+    .f03-stem {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: butt;
+      stroke-dasharray: 34;
+      stroke-dashoffset: 34;
+    }
+  </style>
+
+  <div id="root" data-composition-id="03-three-buttons" data-width="1920" data-height="1080">
+    <!-- ground -->
+    <div id="f03-three-buttons-el-1"
+      class="clip f03-ground"
+      data-start="0"
+      data-duration="5"
+      data-track-index="0"
+    ></div>
+
+    <!-- content -->
+    <div id="f03-three-buttons-el-2"
+      class="clip f03-stage"
+      data-start="0"
+      data-duration="5"
+      data-track-index="1"
+    >
+      <div class="f03-topbar">
+        <span class="f03-topbar-label">VIBEKEY CARE</span>
+        <span class="f03-pill">DEVICE</span>
+      </div>
+
+      <h1 class="f03-headline" id="f03-headline">단추 세 개만 남겼습니다</h1>
+
+      <!-- assets/device-board.svg — inlined path-for-path (ids prefixed) -->
+      <div class="f03-device" id="f03-device">
+        <svg
+          viewBox="0 0 360 150"
+          width="360"
+          height="150"
+          role="img"
+          aria-label="바이브키 기기"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <g id="f03-base">
+            <g id="f03-shadow" opacity="0.10">
+              <rect x="9" y="23" width="350" height="106" rx="20" fill="#000000" />
+            </g>
+            <rect
+              id="f03-body"
+              x="5"
+              y="15"
+              width="350"
+              height="110"
+              rx="20"
+              fill="#1E293B"
+              stroke="#475569"
+              stroke-width="3"
+            />
+          </g>
+          <g id="f03-detail">
+            <rect id="f03-trim" x="100" y="28" width="160" height="12" fill="#334155" />
+            <rect id="f03-usb" x="160" y="125" width="40" height="20" rx="6" fill="#94A3B8" />
+          </g>
+          <g id="f03-btn1">
+            <circle cx="60" cy="70" r="30" fill="#0B57D0" stroke="#083F9B" stroke-width="3" />
+            <circle cx="60" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+          <g id="f03-btn2">
+            <circle cx="180" cy="70" r="30" fill="#12703A" stroke="#0B4F27" stroke-width="3" />
+            <circle cx="180" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+          <g id="f03-btn3">
+            <circle cx="300" cy="70" r="30" fill="#B26A00" stroke="#8A5200" stroke-width="3" />
+            <circle cx="300" cy="70" r="12" fill="#FFFFFF" opacity="0.4" />
+          </g>
+        </svg>
+      </div>
+
+      <!-- colour-to-button stems: same user-unit grid as the device svg -->
+      <svg
+        class="f03-stems"
+        viewBox="0 0 360 190"
+        width="360"
+        height="190"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <line class="f03-stem" id="f03-stem1" x1="60" y1="155" x2="60" y2="189" stroke="#0B57D0" />
+        <line class="f03-stem" id="f03-stem2" x1="180" y1="155" x2="180" y2="189" stroke="#12703A" />
+        <line class="f03-stem" id="f03-stem3" x1="300" y1="155" x2="300" y2="189" stroke="#B26A00" />
+      </svg>
+
+      <div class="f03-meta">
+        <span class="f03-meta-label">USB / ANDROID</span>
+        <span class="f03-count"><span>03</span><span class="f03-dot"></span><span>09</span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      var tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+
+      /* ── Scene 1 (0.0–1.4s) — the board body rises and sits ──────────────
+         spring-pop-entrance, overshoot deliberately weak. Hero on screen
+         well before t = 0.5s. */
+      tl.fromTo(
+        "#f03-device",
+        { y: 90, scale: 0.94, opacity: 0 },
+        { y: 0, scale: 1, opacity: 1, duration: 0.78, ease: "back.out(1.05)" },
+        0.08
+      );
+
+      /* chrome settles quietly under the entrance */
+      tl.fromTo(
+        ".f03-topbar > *",
+        { opacity: 0, y: -12 },
+        { opacity: 1, y: 0, duration: 0.45, stagger: 0.06 },
+        0.18
+      );
+
+      /* the board assembles: trim + usb arrive after the body has landed */
+      tl.fromTo(
+        "#f03-detail",
+        { opacity: 0, scale: 0.88 },
+        { opacity: 1, scale: 1, duration: 0.34 },
+        0.95
+      );
+
+      tl.fromTo(
+        ".f03-meta > *",
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, stagger: 0.08 },
+        1.0
+      );
+
+      /* ── Scene 2 (1.4–2.3s) — three separate beats, 0.25s apart ──────────
+         1 cobalt → 2 green → 3 amber. Three strikes is what makes the
+         viewer count three; together they would read as one pattern. */
+      var buttons = ["#f03-btn1", "#f03-btn2", "#f03-btn3"];
+      for (var i = 0; i < buttons.length; i++) {
+        tl.fromTo(
+          buttons[i],
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.42, ease: "back.out(1.3)" },
+          1.4 + i * 0.25
+        );
+      }
+
+      /* ── Scene 3 (2.3–3.6s) — the colour stems draw downward ─────────────
+         svg-path-draw: stroke-dashoffset 34 → 0, same order as the buttons.
+         This is the recurring "this button = this app" link. */
+      var stems = ["#f03-stem1", "#f03-stem2", "#f03-stem3"];
+      for (var s = 0; s < stems.length; s++) {
+        tl.fromTo(
+          stems[s],
+          { strokeDashoffset: 34 },
+          { strokeDashoffset: 0, duration: 0.55, ease: "power3.out" },
+          2.35 + s * 0.2
+        );
+      }
+
+      /* ── Scene 4 (3.6–5.0s) — the line lands, then everything stops ──────
+         HELD FRAME: no drift, no breathing, no idle float after this. */
+      tl.fromTo(
+        "#f03-headline",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.38, ease: "power3.out" },
+        3.56
+      );
+
+      /* hold the landed state out to the full 5.0s */
+      tl.set("#f03-headline", { opacity: 1 }, 5.0);
+
+      window.__timelines["03-three-buttons"] = tl;
+    })();
+  </script>
+</template>

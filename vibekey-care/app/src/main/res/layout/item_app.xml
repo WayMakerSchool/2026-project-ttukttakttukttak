@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 앱 고르기 화면의 한 줄. 아이콘과 이름을 크게 보여 줍니다. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_xs"
+    android:background="@drawable/bg_card"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/touch_big"
+    android:orientation="horizontal"
+    android:padding="@dimen/space_s">
+
+    <ImageView
+        android:id="@+id/appIcon"
+        android:layout_width="@dimen/app_icon"
+        android:layout_height="@dimen/app_icon"
+        android:layout_marginEnd="@dimen/space_s"
+        android:contentDescription="앱 아이콘" />
+
+    <TextView
+        android:id="@+id/appName"
+        style="@style/VkText.Title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:text="앱 이름" />
+</LinearLayout>

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    앱 고르기 화면.
+    글자를 못 찾으시는 분도 "말로 찾기" 하나로 끝낼 수 있게 했습니다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:orientation="vertical"
+    android:padding="@dimen/space_m">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBack"
+            style="@style/VkButton.Outline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/back"
+            app:icon="@drawable/ic_back"
+            app:iconGravity="textStart" />
+
+        <TextView
+            android:id="@+id/pickerTitle"
+            style="@style/VkText.Title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_s"
+            android:layout_weight="1"
+            android:text="@string/picker_title" />
+    </LinearLayout>
+
+    <!-- 말로 찾기 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnVoiceSearch"
+        style="@style/VkButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_m"
+        android:minHeight="@dimen/touch_big"
+        android:text="@string/picker_voice"
+        android:textSize="@dimen/text_title"
+        app:backgroundTint="@color/vk_accent"
+        app:icon="@drawable/ic_mic"
+        app:iconGravity="textStart" />
+
+    <TextView
+        android:id="@+id/voiceHint"
+        style="@style/VkText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:gravity="center"
+        android:text="@string/picker_ai_hint" />
+
+    <!-- 앱을 여는 대신 바로 실행할 동작 -->
+    <TextView
+        style="@style/VkText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_m"
+        android:gravity="center"
+        android:text="또는 바로 실행할 동작 고르기" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQuickDial"
+            style="@style/VkButton.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_xs"
+            android:layout_weight="1"
+            android:minHeight="@dimen/touch_min"
+            android:text="전화 걸기"
+            app:icon="@drawable/ic_phone"
+            app:iconGravity="textTop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQuickSms"
+            style="@style/VkButton.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_xs"
+            android:layout_marginEnd="@dimen/space_xs"
+            android:layout_weight="1"
+            android:minHeight="@dimen/touch_min"
+            android:text="문자 보내기"
+            app:icon="@drawable/ic_keyboard"
+            app:iconGravity="textTop" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQuickMaps"
+            style="@style/VkButton.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_xs"
+            android:layout_weight="1"
+            android:minHeight="@dimen/touch_min"
+            android:text="길찾기"
+            app:icon="@drawable/ic_search"
+            app:iconGravity="textTop" />
+    </LinearLayout>
+
+    <!-- 글자로 찾기 -->
+    <EditText
+        android:id="@+id/searchInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s"
+        android:autofillHints=""
+        android:background="@drawable/bg_input"
+        android:hint="@string/picker_search"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:minHeight="@dimen/touch_min"
+        android:padding="@dimen/space_s"
+        android:textColor="@color/vk_text"
+        android:textColorHint="@color/vk_text_secondary"
+        android:textSize="@dimen/text_body" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/appList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/space_s"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:scrollbarSize="8dp"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/emptyText"
+        style="@style/VkText.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="@dimen/space_m"
+        android:text="찾는 앱이 없어요."
+        android:visibility="gone" />
+</LinearLayout>

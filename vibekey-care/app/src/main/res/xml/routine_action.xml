@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    삼성 "모드 및 루틴"에 바이브키의 동작(Action)을 알려 주는 선언 파일입니다.
+    루틴 앱은 여기 적힌 tag 값을 vibekey_action / button 파라미터로 되돌려 주고,
+    RoutineActionProvider 가 그 값을 받아 실제 동작을 수행합니다.
+-->
+<routine-actions>
+    <action
+        tag="run_button_1"
+        label="1번 버튼 실행"
+        description="1번 버튼에 연결해 둔 앱을 엽니다."
+        icon="@drawable/ic_play"
+        isMultipleAvailable="false" />
+
+    <action
+        tag="run_button_2"
+        label="2번 버튼 실행"
+        description="2번 버튼에 연결해 둔 앱을 엽니다."
+        icon="@drawable/ic_apps"
+        isMultipleAvailable="false" />
+
+    <action
+        tag="run_button_3"
+        label="3번 버튼 실행"
+        description="3번 버튼에 연결해 둔 앱을 엽니다."
+        icon="@drawable/ic_link"
+        isMultipleAvailable="false" />
+
+    <action
+        tag="open_ai"
+        label="AI 도우미 열기"
+        description="말로 물어볼 수 있는 AI 도우미 화면을 엽니다."
+        icon="@drawable/ic_sparkle"
+        isMultipleAvailable="false" />
+</routine-actions>

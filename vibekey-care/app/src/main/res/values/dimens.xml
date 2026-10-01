@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 어르신 기준 글자 크기: 본문 20sp 이상, 중요한 정보는 26sp 이상 -->
+    <dimen name="text_huge">34sp</dimen>
+    <dimen name="text_title">27sp</dimen>
+    <dimen name="text_body">21sp</dimen>
+    <dimen name="text_label">18sp</dimen>
+
+    <!-- 손 떨림이 있어도 누르기 쉬운 최소 터치 영역 -->
+    <dimen name="touch_min">72dp</dimen>
+    <dimen name="touch_big">88dp</dimen>
+
+    <dimen name="space_xs">6dp</dimen>
+    <dimen name="space_s">12dp</dimen>
+    <dimen name="space_m">18dp</dimen>
+    <dimen name="space_l">26dp</dimen>
+    <dimen name="space_xl">36dp</dimen>
+
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="app_icon">56dp</dimen>
+</resources>

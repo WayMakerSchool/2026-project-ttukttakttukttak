@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    처음 켰을 때 딱 한 번 나오는 설정 화면입니다.
+
+    어르신 사용성을 위해 지킨 원칙
+     1. 앱 이름을 묻지 않습니다. "무엇을 자주 하시나요?"라고 하고 싶은 일만 여쭙니다.
+     2. 화면은 딱 두 장뿐입니다. (고르기 → 결과 확인) 뒤로 갈 일이 없습니다.
+     3. 다음으로 넘어가는 단추는 항상 화면 맨 아래 같은 자리에 있습니다.
+     4. 그만두고 싶으면 언제든 "나중에 할게요"로 빠져나갈 수 있습니다.
+-->
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/flipper"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    tools:context=".OnboardingActivity">
+
+    <!-- ================= 첫 장: 자주 하는 일 고르기 ================= -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:padding="@dimen/space_m">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/VkText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_s"
+                    android:text="@string/onboard_title"
+                    android:textSize="@dimen/text_huge" />
+
+                <TextView
+                    style="@style/VkText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:layout_marginBottom="@dimen/space_m"
+                    android:text="@string/onboard_subtitle" />
+
+                <!-- 기능 칸들은 OnboardingActivity 에서 두 칸씩 채워 넣습니다. -->
+                <GridLayout
+                    android:id="@+id/functionGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:useDefaultMargins="false" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- 항상 화면 맨 아래 같은 자리에 있는 다음 단추 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/vk_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                android:id="@+id/pickCount"
+                style="@style/VkText.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_xs"
+                android:gravity="center"
+                android:text="@string/onboard_need_pick" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOnboardNext"
+                style="@style/VkButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_big"
+                android:text="@string/onboard_next"
+                android:textSize="@dimen/text_title"
+                app:backgroundTint="@color/vk_accent"
+                app:icon="@drawable/ic_sparkle"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOnboardSkip"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="@string/onboard_skip" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ================= 둘째 장: AI가 정한 결과 확인 ================= -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:padding="@dimen/space_m">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/VkText.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_s"
+                    android:text="@string/onboard_result_title"
+                    android:textSize="@dimen/text_huge" />
+
+                <TextView
+                    android:id="@+id/resultNote"
+                    style="@style/VkText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:layout_marginBottom="@dimen/space_m"
+                    android:text="@string/onboard_result_ai" />
+
+                <!-- 기기 그림: 어느 단추 이야기인지 눈으로 먼저 맞춰 봅니다. -->
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/map_title"
+                    android:src="@drawable/ic_device_board" />
+
+                <LinearLayout
+                    android:id="@+id/resultList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_m"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/vk_surface"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOnboardApply"
+                style="@style/VkButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_big"
+                android:text="@string/onboard_apply"
+                android:textSize="@dimen/text_title"
+                app:icon="@drawable/ic_check"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOnboardRetry"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="@string/onboard_retry" />
+        </LinearLayout>
+    </LinearLayout>
+</ViewFlipper>

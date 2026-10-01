@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AI 도우미 화면.
+    한 화면에 "누를 곳 하나(큰 마이크)"만 크게 두어 헷갈리지 않게 했습니다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:orientation="vertical"
+    android:padding="@dimen/space_m">
+
+    <!-- 위쪽: 뒤로 + 제목 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBack"
+            style="@style/VkButton.Outline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/touch_min"
+            android:text="@string/back"
+            app:icon="@drawable/ic_back"
+            app:iconGravity="textStart" />
+
+        <TextView
+            style="@style/VkText.Title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_s"
+            android:layout_weight="1"
+            android:text="@string/ai_title"
+            android:textSize="@dimen/text_huge" />
+    </LinearLayout>
+
+    <!-- 가운데: 질문과 답 -->
+    <ScrollView
+        android:id="@+id/answerScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/space_m"
+        android:layout_weight="1"
+        android:background="@drawable/bg_answer"
+        android:padding="@dimen/space_m">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/questionText"
+                style="@style/VkText.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/space_s"
+                android:text=""
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/answerText"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ai_hint"
+                android:textSize="@dimen/text_title" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 상태 안내 한 줄 -->
+    <TextView
+        android:id="@+id/aiStatusText"
+        style="@style/VkText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s"
+        android:gravity="center"
+        android:text="" />
+
+    <!-- 아래쪽: 큰 마이크 단추 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s">
+
+        <ImageView
+            android:id="@+id/btnMic"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_mic"
+            android:clickable="true"
+            android:contentDescription="@string/ai_speak"
+            android:focusable="true"
+            android:padding="34dp"
+            android:src="@drawable/ic_mic"
+            app:tint="@color/vk_white" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/micLabel"
+        style="@style/VkText.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:gravity="center"
+        android:text="@string/ai_speak"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRepeat"
+            style="@style/VkButton.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/space_xs"
+            android:layout_weight="1"
+            android:text="@string/ai_repeat"
+            app:icon="@drawable/ic_speaker"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnType"
+            style="@style/VkButton.Outline"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_xs"
+            android:layout_weight="1"
+            android:text="@string/ai_type"
+            app:icon="@drawable/ic_keyboard"
+            app:iconGravity="textStart" />
+    </LinearLayout>
+</LinearLayout>

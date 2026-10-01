@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    잠금화면 위에 잠깐 떠서 "잠금을 풀면 열립니다"를 알려 주는 화면입니다.
+
+    투명하게 두면 두 가지가 깨집니다.
+      · 안드로이드가 "보이는 화면"으로 치지 않아 잠금 해제 요청이 거절됩니다.
+      · 어르신 눈에는 아무 일도 안 일어난 것처럼 보입니다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="@dimen/space_xl">
+
+    <ImageView
+        android:id="@+id/gateIcon"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_apps" />
+
+    <TextView
+        android:id="@+id/gateApp"
+        style="@style/VkText.Title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_m"
+        android:gravity="center"
+        android:textSize="@dimen/text_huge" />
+
+    <TextView
+        android:id="@+id/gateHint"
+        style="@style/VkText.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s"
+        android:gravity="center"
+        android:text="@string/gate_unlock" />
+</LinearLayout>

@@ -1,0 +1,146 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .wd-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .wd-stage { position: absolute; inset: 0; }
+
+    .wd-eyebrow {
+      position: absolute; left: 0; top: 100px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .wd-title {
+      position: absolute; left: 0; top: 144px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 56px;
+      letter-spacing: -0.025em; color: #101418; opacity: 0;
+    }
+
+    .wd-svg { position: absolute; left: 336px; top: 292px; width: 384px; height: 384px; opacity: 0; }
+    .wd-center {
+      position: absolute; left: 336px; top: 292px; width: 384px; height: 384px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      opacity: 0;
+    }
+    .wd-cname { font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 19px; color: #41505E; letter-spacing: 0.05em; }
+    .wd-ctime { font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 74px; color: #0B57D0; line-height: 1; }
+    .wd-cstate { font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 25px; color: #41505E; }
+
+    .wd-card {
+      position: absolute; left: 880px; top: 330px; width: 500px;
+      padding: 34px 38px; border-radius: 14px;
+      background: rgba(11,87,208,0.04); border: 1.5px solid rgba(11,87,208,0.2);
+      opacity: 0;
+    }
+    .wd-cardhead {
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 20px;
+      letter-spacing: 0.08em; color: #0B57D0; margin-bottom: 18px;
+    }
+    .wd-cardrow {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 14px 0; border-top: 1px solid rgba(11,87,208,0.16);
+      font-family: "Gothic A1", sans-serif; font-weight: 500; font-size: 27px; color: #41505E;
+    }
+    .wd-cardrow b { font-weight: 700; color: #101418; }
+
+    .wd-flash { position: absolute; inset: 0; background: #101418; opacity: 0; }
+
+    .wd-note {
+      position: absolute; left: 0; top: 764px; width: 1920px; text-align: center;
+      font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 29px; color: #41505E; opacity: 0;
+    }
+    .wd-note b { font-weight: 700; color: #101418; }
+  </style>
+
+  <div id="root" data-composition-id="08-watchdog" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+    <div id="wd-bg" class="clip wd-bg" data-start="0" data-duration="12" data-track-index="0"></div>
+
+    <div id="wd-stage" class="clip wd-stage" data-start="0" data-duration="12" data-track-index="1">
+      <div class="wd-eyebrow" id="wd-eyebrow">스스로를 지켜본다</div>
+      <div class="wd-title" id="wd-title">멈추면 스스로 되살아난다</div>
+
+      <svg class="wd-svg" id="wd-svg" viewBox="0 0 384 384">
+        <circle cx="192" cy="192" r="162" fill="none" stroke="rgba(11,87,208,0.14)" stroke-width="14" />
+        <circle id="wd-ring" cx="192" cy="192" r="162" fill="none" stroke="#0B57D0" stroke-width="14"
+                stroke-linecap="round" transform="rotate(-90 192 192)" />
+      </svg>
+
+      <div class="wd-center" id="wd-center">
+        <div class="wd-cname">TASK WATCHDOG</div>
+        <div class="wd-ctime" id="wd-ctime">0.0s</div>
+        <div class="wd-cstate" id="wd-cstate">정상</div>
+      </div>
+
+      <div class="wd-card" id="wd-card">
+        <div class="wd-cardhead">폰이 받은 상태</div>
+        <div class="wd-cardrow"><span>재시작 원인</span><b>워치독</b></div>
+        <div class="wd-cardrow"><span>펌웨어</span><b>3.0</b></div>
+        <div class="wd-cardrow"><span>놓친 입력</span><b>0</b></div>
+      </div>
+
+      <div class="wd-note" id="wd-note">멈춘 사실을 <b>숨기지 않고 폰에 알립니다.</b></div>
+      <div class="wd-flash" id="wd-flash"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      var R = 162, C = 2 * Math.PI * R;
+      var ring = document.getElementById("wd-ring");
+      var timeEl = document.getElementById("wd-ctime");
+      gsap.set(ring, { strokeDasharray: C, strokeDashoffset: C });
+
+      /* 프록시 하나를 계속 재사용한다. onUpdate 는 seek 에서도 실행되므로 결정적이다. */
+      var p = { v: 0 };
+      function render() {
+        gsap.set(ring, { strokeDashoffset: C * (1 - p.v / 5) });
+        timeEl.textContent = p.v.toFixed(1) + "s";
+      }
+      function count(at, to, dur, ease) {
+        tl.to(p, { v: to, duration: dur, ease: ease || "none", onUpdate: render }, at);
+      }
+
+      /* ---- Scene 1 (0.0–3.5) : 링이 찼다 리셋됐다 반복 — 태스크가 살아 있다는 신호 ---- */
+      tl.fromTo("#wd-eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.1);
+      tl.fromTo("#wd-title", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.35);
+      tl.fromTo("#wd-svg", { opacity: 0, scale: 0.94, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.9);
+      tl.fromTo("#wd-center", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 1.1);
+
+      var cyc = [1.5, 2.05, 2.6, 3.15];
+      for (var i = 0; i < cyc.length; i++) {
+        count(cyc[i], 1.4, 0.42);
+        count(cyc[i] + 0.44, 0, 0.02);   /* 워치독 초기화 */
+      }
+
+      /* ---- Scene 2 (3.5–7.0) : 초기화가 멈춘다. 끝까지 차오르고 재시작 ---- */
+      tl.set("#wd-cstate", { textContent: "응답 없음" }, 3.75);
+      tl.to("#wd-cstate", { color: "#B3261E", duration: 0.3, ease: "power2.out" }, 3.75);
+      count(3.8, 5, 2.3);
+      tl.to("#wd-ring", { stroke: "#B3261E", duration: 0.4, ease: "power2.out" }, 5.5);
+      /* 완주 → 한 번 어두워졌다 즉시 밝아진다 = 재시작 */
+      tl.to("#wd-flash", { opacity: 1, duration: 0.12, ease: "power2.in" }, 6.15);
+      tl.to("#wd-flash", { opacity: 0, duration: 0.42, ease: "power2.out" }, 6.34);
+      count(6.28, 0, 0.02);
+      tl.set("#wd-cstate", { textContent: "재시작 완료" }, 6.3);
+      tl.to("#wd-ring", { stroke: "#0B57D0", duration: 0.3, ease: "power2.out" }, 6.35);
+      tl.to("#wd-cstate", { color: "#12703A", duration: 0.3, ease: "power2.out" }, 6.4);
+
+      /* ---- Scene 3 (7.0–12.0) : 폰이 원인을 받는다. 이후 완전 정지 ---- */
+      tl.fromTo("#wd-card", { opacity: 0, y: 30, scale: 0.96, transformOrigin: "50% 50%" }, { opacity: 1, y: 0, scale: 1, duration: 0.62, ease: "back.out(1.5)" }, 7.3);
+      tl.fromTo("#wd-note", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 8.4);
+      /* 9.0초 이후 정지 — 다음 프레임(숫자) 직전의 호흡 */
+
+      window.__timelines["08-watchdog"] = tl;
+    })();
+  </script>
+</template>

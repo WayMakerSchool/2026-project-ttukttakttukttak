@@ -1,0 +1,141 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .sl-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .sl-stage { position: absolute; inset: 0; }
+
+    .sl-divider { position: absolute; left: 959px; top: 92px; width: 1.5px; height: 620px; background: rgba(11,87,208,0.2); transform-origin: 50% 0%; }
+
+    .sl-chrome {
+      position: absolute; top: 108px; width: 960px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 22px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .sl-btn {
+      position: absolute; top: 200px; width: 150px; height: 150px; border-radius: 50%;
+      border: 3px solid #101418; background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 52px; color: #101418;
+      opacity: 0;
+    }
+    .sl-gauge {
+      position: absolute; top: 400px; width: 320px; height: 18px; border-radius: 6px;
+      background: rgba(11,87,208,0.08); border: 1.5px solid rgba(11,87,208,0.2); overflow: hidden; opacity: 0;
+    }
+    .sl-fill { position: absolute; left: 0; top: 0; height: 100%; width: 100%; background: #41505E; transform-origin: 0% 50%; transform: scaleX(0); }
+    .sl-mark { position: absolute; top: 394px; width: 2px; height: 30px; background: #B3261E; opacity: 0; }
+    .sl-marklabel {
+      position: absolute; top: 430px; font-family: "JetBrains Mono", monospace;
+      font-weight: 600; font-size: 19px; color: #B3261E; opacity: 0;
+    }
+    .sl-time {
+      position: absolute; top: 436px; width: 320px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 22px; color: #41505E; opacity: 0;
+    }
+    .sl-result {
+      position: absolute; top: 528px; width: 400px;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 22px 0; border-radius: 14px;
+      background: rgba(11,87,208,0.04); border: 1.5px solid rgba(11,87,208,0.2);
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 38px; color: #101418; opacity: 0;
+    }
+
+    .sl-formula {
+      position: absolute; left: 0; top: 700px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 64px;
+      letter-spacing: -0.02em; color: #101418; opacity: 0;
+    }
+    .sl-formula em { font-style: normal; color: #0B57D0; }
+    .sl-sub {
+      position: absolute; left: 0; top: 800px; width: 1920px; text-align: center;
+      font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 27px; color: #41505E; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="04-short-long" data-start="0" data-duration="16" data-width="1920" data-height="1080">
+    <div id="sl-bg" class="clip sl-bg" data-start="0" data-duration="16" data-track-index="0"></div>
+
+    <div id="sl-stage" class="clip sl-stage" data-start="0" data-duration="16" data-track-index="1">
+      <div class="sl-divider" id="sl-divider"></div>
+
+      <div class="sl-chrome" id="sl-chromeL" style="left: 0;">짧게</div>
+      <div class="sl-chrome" id="sl-chromeR" style="left: 960px;">길게</div>
+
+      <div class="sl-btn" id="sl-btnL" style="left: 405px;">3</div>
+      <div class="sl-btn" id="sl-btnR" style="left: 1365px;">3</div>
+
+      <div class="sl-gauge" id="sl-gaugeL" style="left: 320px;"><div class="sl-fill" id="sl-fillL"></div></div>
+      <div class="sl-gauge" id="sl-gaugeR" style="left: 1280px;"><div class="sl-fill" id="sl-fillR"></div></div>
+
+      <div class="sl-mark" id="sl-markL" style="left: 544px;"></div>
+      <div class="sl-mark" id="sl-markR" style="left: 1504px;"></div>
+      <div class="sl-marklabel" id="sl-mlL" style="left: 508px;">0.7s</div>
+      <div class="sl-marklabel" id="sl-mlR" style="left: 1468px;">0.7s</div>
+
+      <div class="sl-time" id="sl-timeL" style="left: 320px;">0.2s</div>
+      <div class="sl-time" id="sl-timeR" style="left: 1280px;">0.9s</div>
+
+      <div class="sl-result" id="sl-resL" style="left: 280px;">길찾기</div>
+      <div class="sl-result" id="sl-resR" style="left: 1240px; color:#0B57D0;">AI 도우미</div>
+
+      <div class="sl-formula" id="sl-formula">버튼 <em>3</em>개 × 누름 <em>2</em>가지 = <em>6</em>가지 동작</div>
+      <div class="sl-sub" id="sl-sub">버튼을 늘리지 않고 할 수 있는 일을 늘렸습니다.</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0.0–4.0) : 좌우 대칭으로 갈린다 ---- */
+      tl.fromTo("#sl-divider", { scaleY: 0 }, { scaleY: 1, duration: 0.8, ease: "power3.inOut" }, 0.2);
+      tl.fromTo("#sl-chromeL", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.7);
+      tl.fromTo("#sl-chromeR", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.85);
+      tl.fromTo("#sl-btnL", { opacity: 0, scale: 0.9, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 1.2);
+      tl.fromTo("#sl-btnR", { opacity: 0, scale: 0.9, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 1.35);
+      tl.fromTo("#sl-gaugeL", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 2.2);
+      tl.fromTo("#sl-gaugeR", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, 2.3);
+      tl.fromTo("#sl-markL", { opacity: 0 }, { opacity: 0.55, duration: 0.3, ease: "power2.out" }, 2.7);
+      tl.fromTo("#sl-markR", { opacity: 0 }, { opacity: 0.55, duration: 0.3, ease: "power2.out" }, 2.8);
+      tl.fromTo("#sl-mlL", { opacity: 0 }, { opacity: 0.75, duration: 0.3, ease: "power2.out" }, 2.9);
+      tl.fromTo("#sl-mlR", { opacity: 0 }, { opacity: 0.75, duration: 0.3, ease: "power2.out" }, 3.0);
+
+      /* ---- Scene 2 (4.0–8.0) : 동시에 눌리고, 게이지가 갈린다 ---- */
+      tl.to("#sl-btnL", { scale: 0.86, duration: 0.1, ease: "power2.in", transformOrigin: "50% 50%" }, 4.2);
+      tl.to("#sl-btnR", { scale: 0.86, duration: 0.1, ease: "power2.in", transformOrigin: "50% 50%" }, 4.2);
+      /* 왼쪽: 0.2초에서 멈추고 손을 뗀다 */
+      tl.to("#sl-fillL", { scaleX: 0.22, duration: 0.55, ease: "none" }, 4.3);
+      tl.to("#sl-btnL", { scale: 1, duration: 0.45, ease: "elastic.out(1, 0.5)" }, 4.85);
+      tl.fromTo("#sl-timeL", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 4.95);
+      /* 오른쪽: 계속 눌러 0.7초 선을 넘는다 */
+      tl.to("#sl-fillR", { scaleX: 0.7, duration: 1.85, ease: "none" }, 4.3);
+      tl.to("#sl-fillR", { backgroundColor: "#0B57D0", duration: 0.25, ease: "power2.out" }, 6.15);
+      tl.to("#sl-markR", { opacity: 1, backgroundColor: "#0B57D0", duration: 0.25, ease: "power2.out" }, 6.15);
+      tl.to("#sl-mlR", { opacity: 1, color: "#0B57D0", duration: 0.25, ease: "power2.out" }, 6.15);
+      tl.to("#sl-fillR", { scaleX: 0.92, duration: 0.5, ease: "none" }, 6.4);
+      tl.to("#sl-btnR", { scale: 1, duration: 0.5, ease: "elastic.out(1, 0.5)" }, 6.9);
+      tl.fromTo("#sl-timeR", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 7.0);
+
+      /* ---- Scene 3 (8.0–12.0) : 결과가 다르다 ---- */
+      tl.fromTo("#sl-resL", { opacity: 0, y: 26, scale: 0.94, transformOrigin: "50% 50%" }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.6)" }, 8.3);
+      tl.fromTo("#sl-resR", { opacity: 0, y: 26, scale: 0.94, transformOrigin: "50% 50%" }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.6)" }, 9.1);
+
+      /* ---- Scene 4 (12.0–16.0) : 분할선이 사라지고 결론만 남는다. 이후 완전 정지 ---- */
+      tl.to("#sl-divider", { opacity: 0, duration: 0.6, ease: "power2.inOut" }, 12.0);
+      tl.fromTo("#sl-formula", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 12.3);
+      tl.fromTo("#sl-sub", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 13.2);
+      /* 13.8초 이후 아무것도 움직이지 않는다 — 호흡 프레임 */
+
+      window.__timelines["04-short-long"] = tl;
+    })();
+  </script>
+</template>

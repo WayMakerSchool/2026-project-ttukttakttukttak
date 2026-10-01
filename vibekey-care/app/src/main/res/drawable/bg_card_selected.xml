@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 첫 설정에서 "고른" 기능 칸. 테두리를 두껍고 진하게 해 선택 여부를 한눈에 보이게 합니다. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/vk_primary_soft" />
+    <corners android:radius="@dimen/radius_card" />
+    <stroke android:width="4dp" android:color="@color/vk_primary" />
+</shape>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #F7F9FC;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="175"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="el-01-wall"
+        class="scene"
+        data-composition-id="01-wall"
+        data-composition-src="compositions/frames/01-wall.html"
+        data-start="0"
+        data-duration="22"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-02-three-buttons"
+        class="scene"
+        data-composition-id="02-three-buttons"
+        data-composition-src="compositions/frames/02-three-buttons.html"
+        data-start="22"
+        data-duration="18"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-press-opens"
+        class="scene"
+        data-composition-id="03-press-opens"
+        data-composition-src="compositions/frames/03-press-opens.html"
+        data-start="40"
+        data-duration="26"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-04-short-long"
+        class="scene"
+        data-composition-id="04-short-long"
+        data-composition-src="compositions/frames/04-short-long.html"
+        data-start="66"
+        data-duration="16"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-05-inside"
+        class="scene"
+        data-composition-id="05-inside"
+        data-composition-src="compositions/frames/05-inside.html"
+        data-start="82"
+        data-duration="20"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-06-frame-assembly"
+        class="scene"
+        data-composition-id="06-frame-assembly"
+        data-composition-src="compositions/frames/06-frame-assembly.html"
+        data-start="102"
+        data-duration="18"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-07-crc-reject"
+        class="scene"
+        data-composition-id="07-crc-reject"
+        data-composition-src="compositions/frames/07-crc-reject.html"
+        data-start="120"
+        data-duration="18"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-08-watchdog"
+        class="scene"
+        data-composition-id="08-watchdog"
+        data-composition-src="compositions/frames/08-watchdog.html"
+        data-start="138"
+        data-duration="12"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-09-numbers"
+        class="scene"
+        data-composition-id="09-numbers"
+        data-composition-src="compositions/frames/09-numbers.html"
+        data-start="150"
+        data-duration="15"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-10-three-presses"
+        class="scene"
+        data-composition-id="10-three-presses"
+        data-composition-src="compositions/frames/10-three-presses.html"
+        data-start="165"
+        data-duration="10"
+        data-track-index="1"
+      ></div>
+
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

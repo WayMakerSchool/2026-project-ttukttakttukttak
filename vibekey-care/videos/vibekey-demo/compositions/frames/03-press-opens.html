@@ -1,0 +1,182 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .po-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .po-stage { position: absolute; inset: 0; }
+
+    .po-eyebrow {
+      position: absolute; left: 96px; top: 84px;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .po-divider { position: absolute; left: 768px; top: 84px; width: 1.5px; height: 780px; background: rgba(11,87,208,0.2); transform-origin: 50% 0%; }
+
+    /* 왼쪽 — 기기 */
+    .po-btn {
+      position: absolute; width: 132px; height: 132px; border-radius: 50%;
+      border: 3px solid #101418; background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 44px; color: #101418;
+    }
+    .po-ring { position: absolute; width: 132px; height: 132px; border-radius: 50%; border: 4px solid #0B57D0; opacity: 0; }
+    .po-btnname {
+      position: absolute; font-family: "Gothic A1", sans-serif; font-weight: 600;
+      font-size: 27px; color: #41505E; opacity: 0;
+    }
+
+    /* 오른쪽 — 폰 */
+    .po-phone {
+      position: absolute; left: 1150px; top: 110px; width: 440px; height: 720px;
+      border-radius: 46px; background: #FFFFFF; border: 3px solid rgba(16,20,24,0.16);
+      overflow: hidden;
+    }
+    .po-screen { position: absolute; inset: 12px; border-radius: 34px; background: #F7F9FC; overflow: hidden; }
+    .po-view { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 54px; opacity: 0; visibility: hidden; }
+    .po-vtitle { font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 32px; color: #101418; margin-bottom: 8px; }
+    .po-vsub { font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 20px; color: #41505E; margin-bottom: 34px; }
+    .po-vbig { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 40px; color: #0B57D0; letter-spacing: 0.02em; }
+    .po-slotrow { display: flex; flex-direction: column; gap: 16px; width: 306px; margin-top: 10px; }
+    .po-slot {
+      display: flex; align-items: center; gap: 16px; padding: 18px 20px;
+      border-radius: 14px; background: rgba(11,87,208,0.04); border: 1.5px solid rgba(11,87,208,0.2);
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 25px; color: #101418;
+    }
+    .po-slotdot { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+    .po-filled { opacity: 0; }
+
+    .po-badge {
+      position: absolute; left: 1150px; top: 856px; width: 440px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 24px;
+      color: #0B57D0; opacity: 0;
+    }
+    .po-caption {
+      position: absolute; left: 96px; top: 748px; width: 600px;
+      font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 28px;
+      line-height: 1.55; color: #41505E; opacity: 0;
+    }
+    .po-caption b { font-weight: 700; color: #101418; }
+  </style>
+
+  <div id="root" data-composition-id="03-press-opens" data-start="0" data-duration="26" data-width="1920" data-height="1080">
+    <div id="po-bg" class="clip po-bg" data-start="0" data-duration="26" data-track-index="0"></div>
+
+    <div id="po-stage" class="clip po-stage" data-start="0" data-duration="26" data-track-index="1">
+      <div class="po-eyebrow" id="po-eyebrow">실제 동작</div>
+      <div class="po-divider" id="po-divider"></div>
+
+      <div class="po-btn" id="po-btn1" style="left: 210px; top: 236px;">1</div>
+      <div class="po-ring" id="po-ring1" style="left: 210px; top: 236px;"></div>
+      <div class="po-btnname" id="po-name1" style="left: 372px; top: 282px;">전화</div>
+
+      <div class="po-btn" id="po-btn2" style="left: 210px; top: 404px;">2</div>
+      <div class="po-ring" id="po-ring2" style="left: 210px; top: 404px; border-color:#12703A;"></div>
+      <div class="po-btnname" id="po-name2" style="left: 372px; top: 450px;">문자</div>
+
+      <div class="po-btn" id="po-btn3" style="left: 210px; top: 572px;">3</div>
+      <div class="po-ring" id="po-ring3" style="left: 210px; top: 572px; border-color:#B26A00;"></div>
+      <div class="po-btnname" id="po-name3" style="left: 372px; top: 618px;">길찾기</div>
+
+      <div class="po-caption" id="po-caption">누르면 <b>바로 열립니다.</b><br />앱을 찾을 필요도, 화면을 넘길 필요도 없습니다.</div>
+
+      <div class="po-phone" id="po-phone">
+        <div class="po-screen">
+          <div class="po-view" id="po-home" style="opacity:1; visibility:visible">
+            <div class="po-vtitle">바이브키</div>
+            <div class="po-vsub">버튼을 눌러 주세요</div>
+            <div class="po-slotrow">
+              <div class="po-slot"><span class="po-slotdot" style="background:#0B57D0"></span>1번 버튼</div>
+              <div class="po-slot"><span class="po-slotdot" style="background:#12703A"></span>2번 버튼</div>
+              <div class="po-slot"><span class="po-slotdot" style="background:#B26A00"></span>3번 버튼</div>
+            </div>
+          </div>
+          <div class="po-view" id="po-dial">
+            <div class="po-vtitle">전화</div>
+            <div class="po-vsub">번호가 채워졌어요</div>
+            <div class="po-vbig">010-1234-5678</div>
+          </div>
+          <div class="po-view" id="po-sms">
+            <div class="po-vtitle">문자</div>
+            <div class="po-vsub">받는 사람이 채워졌어요</div>
+            <div class="po-vbig" style="color:#12703A">010-1234-5678</div>
+          </div>
+          <div class="po-view" id="po-map">
+            <div class="po-vtitle">길찾기</div>
+            <div class="po-vsub">목적지로 안내를 시작합니다</div>
+            <div class="po-vbig" style="color:#B26A00">집 → 병원</div>
+          </div>
+          <div class="po-view" id="po-done">
+            <div class="po-vtitle">바이브키</div>
+            <div class="po-vsub">세 버튼에 들어간 것</div>
+            <div class="po-slotrow">
+              <div class="po-slot"><span class="po-slotdot" style="background:#0B57D0"></span>전화</div>
+              <div class="po-slot"><span class="po-slotdot" style="background:#12703A"></span>문자</div>
+              <div class="po-slot"><span class="po-slotdot" style="background:#B26A00"></span>길찾기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="po-badge" id="po-badge">짧게 누르기</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* 한 번의 누름: 눌림 → 링 확산 → 폰 흔들림 → 화면 교체 */
+      function press(at, btn, ring, name, from, to, accent) {
+        /* press-release-spring: 빠르게 눌리고 탄성으로 돌아온다 */
+        tl.to(btn, { scale: 0.86, duration: 0.09, ease: "power2.in", transformOrigin: "50% 50%" }, at);
+        tl.to(btn, { scale: 1, duration: 0.5, ease: "elastic.out(1, 0.45)" }, at + 0.09);
+        /* cursor-click-ripple 응용: 링이 퍼지며 옅어진다 */
+        tl.fromTo(ring, { opacity: 0.9, scale: 1, transformOrigin: "50% 50%" }, { opacity: 0, scale: 2.4, duration: 0.75, ease: "power2.out" }, at + 0.05);
+        tl.fromTo(name, { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, at + 0.2);
+        /* 폰이 짧게 흔들린다 — 진동은 폰이 한다 */
+        tl.to("#po-phone", { x: 7, duration: 0.05, ease: "none" }, at + 0.62);
+        tl.to("#po-phone", { x: -6, duration: 0.05, ease: "none" }, at + 0.67);
+        tl.to("#po-phone", { x: 4, duration: 0.05, ease: "none" }, at + 0.72);
+        tl.to("#po-phone", { x: 0, duration: 0.08, ease: "power2.out" }, at + 0.77);
+        /* scale-swap-transition: 나가는 쪽은 축소+블러, 들어오는 쪽은 확대에서 안착 */
+        tl.to(from, { autoAlpha: 0, scale: 0.94, filter: "blur(7px)", duration: 0.24, ease: "power2.in", transformOrigin: "50% 42%" }, at + 0.80);
+        tl.fromTo(to, { autoAlpha: 0, scale: 1.07, filter: "blur(9px)" }, { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.46, ease: "power3.out", transformOrigin: "50% 42%" }, at + 1.04);
+        tl.fromTo("#po-badge", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, at + 1.0);
+        tl.set("#po-badge", { color: accent }, at + 1.0);
+      }
+
+      /* ---- Scene 1 (0.0–3.0) : 2분할과 폰 홈 ---- */
+      tl.fromTo("#po-eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.15);
+      tl.fromTo("#po-divider", { scaleY: 0 }, { scaleY: 1, duration: 0.7, ease: "power3.inOut" }, 0.3);
+      tl.fromTo("#po-phone", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.5);
+      tl.fromTo("#po-btn1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.34, ease: "power3.out" }, 1.0);
+      tl.fromTo("#po-btn2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.34, ease: "power3.out" }, 1.2);
+      tl.fromTo("#po-btn3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.34, ease: "power3.out" }, 1.4);
+
+      /* ---- Scene 2 (3.0–10.0) : 1번 → 전화 ---- */
+      press(3.4, "#po-btn1", "#po-ring1", "#po-name1", "#po-home", "#po-dial", "#0B57D0");
+      tl.fromTo("#po-caption", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 6.2);
+
+      /* ---- Scene 3 (10.0–17.0) : 2번 → 문자. 같은 리듬 ---- */
+      press(10.6, "#po-btn2", "#po-ring2", "#po-name2", "#po-dial", "#po-sms", "#12703A");
+
+      /* ---- Scene 4 (17.0–23.0) : 3번 → 길찾기. 0.2초 빠르게 ---- */
+      press(17.6, "#po-btn3", "#po-ring3", "#po-name3", "#po-sms", "#po-map", "#B26A00");
+
+      /* ---- Scene 5 (23.0–26.0) : 홈으로 돌아오고 세 앱이 남는다 ---- */
+      tl.to("#po-badge", { opacity: 0, duration: 0.3, ease: "power2.in" }, 22.9);
+      tl.to("#po-map", { autoAlpha: 0, scale: 0.94, filter: "blur(7px)", duration: 0.26, ease: "power2.in", transformOrigin: "50% 42%" }, 23.1);
+      tl.fromTo("#po-done", { autoAlpha: 0, scale: 1.06, filter: "blur(9px)" }, { autoAlpha: 1, scale: 1, filter: "blur(0px)", duration: 0.52, ease: "power3.out", transformOrigin: "50% 42%" }, 23.4);
+
+      window.__timelines["03-press-opens"] = tl;
+    })();
+  </script>
+</template>

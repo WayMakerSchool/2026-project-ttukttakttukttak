@@ -1,0 +1,18 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        // usb-serial-for-android 라이브러리를 정상 다운로드하기 위한 JitPack 저장소 추가
+        maven { url 'https://jitpack.io' }
+    }
+}
+rootProject.name = "VibeKey"
+include ':app'

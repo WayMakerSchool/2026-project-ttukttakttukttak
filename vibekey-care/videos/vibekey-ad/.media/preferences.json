@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "preferences": {
+    "destination": {
+      "value": "youtube",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:43:55.951Z"
+    },
+    "aspect": {
+      "value": "1920x1080",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:43:55.981Z"
+    },
+    "language": {
+      "value": "ko",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:43:56.005Z"
+    },
+    "flow": {
+      "value": "automation",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:43:56.030Z"
+    },
+    "storyboard": {
+      "value": "no",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:43:56.054Z"
+    },
+    "style_preset.product-launch-video": {
+      "value": "creative-mode",
+      "confirmed_in": [
+        "vibekey-ad"
+      ],
+      "updated_at": "2026-08-31T07:49:58.062Z"
+    }
+  },
+  "sightings": {}
+}

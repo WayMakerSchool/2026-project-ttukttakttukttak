@@ -1,0 +1,6 @@
+// Top-level build.gradle file where we define configuration options common to all sub-projects/modules.
+plugins {
+    // Android Gradle Plugin (AGP) 버전을 명시하여 서브 모듈(app)에서 참조할 수 있도록 합니다.
+    id 'com.android.application' version '8.4.0' apply false
+    id 'com.android.library' version '8.4.0' apply false
+}

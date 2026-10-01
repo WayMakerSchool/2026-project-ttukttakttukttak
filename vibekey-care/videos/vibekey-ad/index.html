@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #F7F9FC;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="55"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="el-01-wall"
+        class="scene"
+        data-composition-id="01-wall"
+        data-composition-src="compositions/frames/01-wall.html"
+        data-start="0"
+        data-duration="6.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-02-erased"
+        class="scene"
+        data-composition-id="02-erased"
+        data-composition-src="compositions/frames/02-erased.html"
+        data-start="6.5"
+        data-duration="5.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-03-three-buttons"
+        class="scene"
+        data-composition-id="03-three-buttons"
+        data-composition-src="compositions/frames/03-three-buttons.html"
+        data-start="12"
+        data-duration="5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-04-what-do-you-do"
+        class="scene"
+        data-composition-id="04-what-do-you-do"
+        data-composition-src="compositions/frames/04-what-do-you-do.html"
+        data-start="17"
+        data-duration="7.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-05-ai-assigns"
+        class="scene"
+        data-composition-id="05-ai-assigns"
+        data-composition-src="compositions/frames/05-ai-assigns.html"
+        data-start="24.5"
+        data-duration="7"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-06-press-opens"
+        class="scene"
+        data-composition-id="06-press-opens"
+        data-composition-src="compositions/frames/06-press-opens.html"
+        data-start="31.5"
+        data-duration="7.5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-07-short-and-long"
+        class="scene"
+        data-composition-id="07-short-and-long"
+        data-composition-src="compositions/frames/07-short-and-long.html"
+        data-start="39"
+        data-duration="5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-08-pocket-guard"
+        class="scene"
+        data-composition-id="08-pocket-guard"
+        data-composition-src="compositions/frames/08-pocket-guard.html"
+        data-start="44"
+        data-duration="5"
+        data-track-index="1"
+      ></div>
+
+      <div
+        id="el-09-brand"
+        class="scene"
+        data-composition-id="09-brand"
+        data-composition-src="compositions/frames/09-brand.html"
+        data-start="49"
+        data-duration="6"
+        data-track-index="1"
+      ></div>
+
+      <video id="f04-clip" src="assets/clip-pick.mp4" preload="auto" data-media-start="0" muted playsinline
+        class="clip"
+        style="position:absolute;left:1316px;top:52px;width:360px;height:800px;object-fit:cover"
+        data-start="18.5"
+        data-duration="4.7"
+        data-track-index="4001"
+      ></video>
+
+      <video id="f05-clip" src="assets/clip-result-crop.mp4" preload="auto" data-media-start="0" muted playsinline
+        class="clip"
+        style="position:absolute;left:774.375px;top:189px;width:371.25px;height:660px;object-fit:cover"
+        data-start="24.5"
+        data-duration="3"
+        data-track-index="5001"
+      ></video>
+
+      <video id="f06-clipA" src="assets/clip-press.mp4" preload="auto" data-media-start="0" muted playsinline
+        class="clip"
+        style="position:absolute;left:1262px;top:148px;width:317px;height:644px;object-fit:cover"
+        data-start="31.5"
+        data-duration="3.3"
+        data-track-index="6001"
+      ></video>
+
+      <video id="f06-clipB" src="assets/clip-press.mp4" preload="auto" data-media-start="3.3" muted playsinline
+        class="clip"
+        style="position:absolute;left:738px;top:8px;width:443px;height:878px;object-fit:cover"
+        data-start="34.8"
+        data-duration="3.9"
+        data-track-index="6001"
+      ></video>
+
+      <video id="f09-clip" src="assets/clip-home.mp4" preload="auto" data-media-start="0" muted playsinline
+        class="clip"
+        style="position:absolute;left:681px;top:608px;width:560px;height:252px;object-fit:cover"
+        data-start="49.78"
+        data-duration="5.22"
+        data-track-index="9001"
+      ></video>
+
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Seeed Studio XIAO ESP32-S3 (Vendor ID: 0x2886 = 10374, Product ID: 0x002f = 47) -->
+    <usb-device vendor-id="10374" product-id="47" />
+    
+    <!-- Espressif Native USB CDC / ESP32-S3 OTG (Vendor ID: 0x303a = 12346) -->
+    <usb-device vendor-id="12346" />
+
+    <!-- CH340 / CH341 USB to Serial (Vendor ID: 0x1a86 = 6790) -->
+    <usb-device vendor-id="6790" />
+
+    <!-- CP210x USB to UART Bridge (Vendor ID: 0x10c4 = 4292) -->
+    <usb-device vendor-id="4292" />
+
+    <!-- FTDI (Vendor ID: 0x0403 = 1027) -->
+    <usb-device vendor-id="1027" />
+
+    <!-- Arduino Devices (Vendor ID: 0x2341 = 9025) -->
+    <usb-device vendor-id="9025" />
+</resources>

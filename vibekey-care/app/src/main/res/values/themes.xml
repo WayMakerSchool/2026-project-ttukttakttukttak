@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.VibeKey" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/vk_primary</item>
+        <item name="colorPrimaryDark">@color/vk_primary_dark</item>
+        <item name="colorAccent">@color/vk_primary</item>
+        <item name="colorOnPrimary">@color/vk_white</item>
+        <item name="android:colorBackground">@color/vk_background</item>
+        <item name="android:textColorPrimary">@color/vk_text</item>
+        <item name="android:textColorSecondary">@color/vk_text_secondary</item>
+        <item name="android:statusBarColor" tools:targetApi="21">@color/vk_background</item>
+        <item name="android:navigationBarColor" tools:targetApi="21">@color/vk_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.VibeKey.Dialog</item>
+    </style>
+
+    <!-- 팝업(다이얼로그)에도 본체와 같은 큰 글씨·큰 버튼 기준을 적용합니다. -->
+    <style name="ThemeOverlay.VibeKey.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="materialAlertDialogTitleTextStyle">@style/VkDialog.Title</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/VkDialog.Body</item>
+        <item name="buttonBarPositiveButtonStyle">@style/VkDialog.Button</item>
+        <item name="buttonBarNegativeButtonStyle">@style/VkDialog.Button</item>
+        <item name="buttonBarNeutralButtonStyle">@style/VkDialog.Button</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.VkDialog</item>
+        <item name="colorPrimary">@color/vk_primary</item>
+    </style>
+
+    <!-- 팝업 제목·본문도 본체와 같은 크기로 키웁니다. (MDC 기본 스타일을 부모로 두어
+         레이아웃에 필요한 기본 속성은 그대로 물려받습니다.) -->
+    <style name="VkDialog.Title" parent="MaterialAlertDialog.MaterialComponents.Title.Text">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textColor">@color/vk_text</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="VkDialog.Body" parent="MaterialAlertDialog.MaterialComponents.Body.Text">
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textColor">@color/vk_text</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+    </style>
+
+    <!-- 손 떨림을 고려해 팝업 버튼도 72dp 이상, 21sp로 키웁니다. -->
+    <style name="VkDialog.Button" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:paddingStart">@dimen/space_m</item>
+        <item name="android:paddingEnd">@dimen/space_m</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.VkDialog" parent="">
+        <item name="cornerSize">@dimen/radius_card</item>
+    </style>
+
+    <!-- 화면 없이 동작만 하고 사라지는 액티비티(삼성 루틴 실행용) -->
+    <style name="Theme.VibeKey.Invisible" parent="Theme.VibeKey">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <!-- 큰 글씨 기본 버튼: 손 떨림을 고려해 높이와 글자를 크게 -->
+    <style name="VkButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">@dimen/space_l</item>
+        <item name="android:paddingEnd">@dimen/space_l</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="backgroundTint">@color/vk_primary</item>
+        <item name="android:textColor">@color/vk_white</item>
+        <item name="iconTint">@color/vk_white</item>
+        <item name="iconSize">28dp</item>
+        <item name="iconPadding">@dimen/space_s</item>
+    </style>
+
+    <style name="VkButton.Outline" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:minHeight">@dimen/touch_min</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/vk_primary</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="strokeColor">@color/vk_primary</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="iconTint">@color/vk_primary</item>
+        <item name="iconSize">28dp</item>
+        <item name="iconPadding">@dimen/space_s</item>
+    </style>
+
+    <style name="VkText.Title" parent="">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textColor">@color/vk_text</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="VkText.Body" parent="">
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textColor">@color/vk_text</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+    </style>
+
+    <style name="VkText.Label" parent="">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textColor">@color/vk_text_secondary</item>
+    </style>
+</resources>

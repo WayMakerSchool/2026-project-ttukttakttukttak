@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" width="360" height="150" role="img" aria-label="바이브키 기기">
+  <!-- 앱의 app/src/main/res/drawable/ic_device_board.xml 과 같은 좌표. 단추 중심 x = 60 / 180 / 300 -->
+  <g id="shadow" opacity="0.10">
+    <rect x="9" y="23" width="350" height="106" rx="20" fill="#000000"/>
+  </g>
+  <rect id="body" x="5" y="15" width="350" height="110" rx="20" fill="#1E293B" stroke="#475569" stroke-width="3"/>
+  <rect id="trim" x="100" y="28" width="160" height="12" fill="#334155"/>
+  <rect id="usb" x="160" y="125" width="40" height="20" rx="6" fill="#94A3B8"/>
+  <g id="btn1"><circle cx="60" cy="70" r="30" fill="#0B57D0" stroke="#083F9B" stroke-width="3"/><circle cx="60" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/></g>
+  <g id="btn2"><circle cx="180" cy="70" r="30" fill="#12703A" stroke="#0B4F27" stroke-width="3"/><circle cx="180" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/></g>
+  <g id="btn3"><circle cx="300" cy="70" r="30" fill="#B26A00" stroke="#8A5200" stroke-width="3"/><circle cx="300" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/></g>
+</svg>

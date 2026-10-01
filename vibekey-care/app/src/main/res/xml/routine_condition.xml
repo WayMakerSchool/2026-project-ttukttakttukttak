@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    삼성 "모드 및 루틴"에 바이브키가 만들어 내는 조건(Condition)을 알려 주는 선언 파일입니다.
+    실제 신호는 RoutineBridge 가 브로드캐스트로도 함께 내보내므로,
+    태스커·매크로드로이드 같은 자동화 앱에서도 같은 조건을 쓸 수 있습니다.
+-->
+<routine-conditions>
+    <condition
+        tag="device_connected"
+        label="바이브키 기기가 연결됨"
+        description="버튼 기기를 휴대폰에 꽂았을 때"
+        icon="@drawable/ic_usb" />
+
+    <condition
+        tag="device_disconnected"
+        label="바이브키 기기가 빠짐"
+        description="버튼 기기를 휴대폰에서 뺐을 때"
+        icon="@drawable/ic_alert" />
+
+    <condition
+        tag="button_pressed"
+        label="바이브키 버튼을 누름"
+        description="기기의 버튼을 눌렀을 때"
+        icon="@drawable/ic_play" />
+</routine-conditions>

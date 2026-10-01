@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    기기 그림 + 각 버튼이 여는 앱을 바로 아래에 붙여 보여 주는 화면입니다.
+
+    글을 읽지 않아도 "왼쪽 파란 단추 = 카카오톡" 이 한눈에 들어오도록,
+    · 기기 그림의 버튼 색과 아래 칸의 색을 똑같이 맞추고
+    · 버튼 바로 아래로 이어지는 선을 그려 두었습니다.
+    · 그림의 버튼 위치(1/6, 3/6, 5/6)와 아래 칸 3개의 가운데가 정확히 일치합니다.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/space_s"
+    android:paddingTop="@dimen/space_m"
+    android:paddingEnd="@dimen/space_s"
+    android:paddingBottom="@dimen/space_m">
+
+    <TextView
+        style="@style/VkText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/map_title" />
+
+    <!-- 기기 그림 -->
+    <ImageView
+        android:id="@+id/deviceImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/map_title"
+        android:src="@drawable/ic_device_board" />
+
+    <!-- 버튼 3개와 줄이 맞는 칸 3개 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- 1번 -->
+        <LinearLayout
+            android:id="@+id/mapColumn1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_horizontal"
+            android:minHeight="@dimen/touch_big"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/space_xs">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="18dp"
+                android:background="@color/vk_slot_1" />
+
+            <ImageView
+                android:id="@+id/mapIcon1"
+                android:layout_width="@dimen/app_icon"
+                android:layout_height="@dimen/app_icon"
+                android:layout_marginTop="@dimen/space_xs"
+                android:contentDescription="@string/slot_empty"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/vk_text_secondary" />
+
+            <TextView
+                android:id="@+id/mapName1"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/slot_empty"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 2번 -->
+        <LinearLayout
+            android:id="@+id/mapColumn2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_horizontal"
+            android:minHeight="@dimen/touch_big"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/space_xs">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="18dp"
+                android:background="@color/vk_slot_2" />
+
+            <ImageView
+                android:id="@+id/mapIcon2"
+                android:layout_width="@dimen/app_icon"
+                android:layout_height="@dimen/app_icon"
+                android:layout_marginTop="@dimen/space_xs"
+                android:contentDescription="@string/slot_empty"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/vk_text_secondary" />
+
+            <TextView
+                android:id="@+id/mapName2"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/slot_empty"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 3번 -->
+        <LinearLayout
+            android:id="@+id/mapColumn3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_horizontal"
+            android:minHeight="@dimen/touch_big"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/space_xs">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="18dp"
+                android:background="@color/vk_slot_3" />
+
+            <ImageView
+                android:id="@+id/mapIcon3"
+                android:layout_width="@dimen/app_icon"
+                android:layout_height="@dimen/app_icon"
+                android:layout_marginTop="@dimen/space_xs"
+                android:contentDescription="@string/slot_empty"
+                android:src="@drawable/ic_apps"
+                app:tint="@color/vk_text_secondary" />
+
+            <TextView
+                android:id="@+id/mapName3"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:text="@string/slot_empty"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        style="@style/VkText.Label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:gravity="center"
+        android:text="@string/map_hint" />
+</LinearLayout>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 고른 기능 칸 오른쪽 위에 붙는 동그란 체크 배경 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/vk_primary" />
+</shape>

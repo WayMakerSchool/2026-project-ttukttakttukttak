@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    어르신도 바로 알아볼 수 있도록 만든 홈 화면입니다.
+    · 밝은 배경 + 아주 진한 글씨로 대비를 높였습니다.
+    · 모든 누르는 곳은 72dp 이상으로 크게 잡았습니다.
+    · 화면 순서를 "지금 상태 → 버튼 3개 → 도움 받기" 로 단순하게 두었습니다.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:fillViewport="true"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_m">
+
+        <!-- 제목 -->
+        <TextView
+            android:id="@+id/titleText"
+            style="@style/VkText.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:text="@string/home_title"
+            android:textSize="@dimen/text_huge" />
+
+        <TextView
+            android:id="@+id/subtitleText"
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_m"
+            android:text="@string/home_subtitle" />
+
+        <!-- 지금 상태: 연결됨 / 연결 안 됨 -->
+        <LinearLayout
+            android:id="@+id/statusCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_status_bad"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/touch_big"
+            android:orientation="horizontal"
+            android:padding="@dimen/space_m"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/statusIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="@dimen/space_m"
+                android:contentDescription="@string/status_disconnected"
+                android:src="@drawable/ic_alert"
+                app:tint="@color/vk_danger" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/statusTextView"
+                    style="@style/VkText.Title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/status_disconnected"
+                    android:textColor="@color/vk_danger" />
+
+                <TextView
+                    android:id="@+id/statusDescription"
+                    style="@style/VkText.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="@string/status_hint_disconnected" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 기기 그림 + 각 버튼이 여는 앱 -->
+        <include
+            layout="@layout/view_hardware_map"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_m" />
+
+        <!-- AI 기능 -->
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:text="AI 도움 받기" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAiHelper"
+            style="@style/VkButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/touch_big"
+            android:text="@string/btn_ai_helper"
+            android:textSize="@dimen/text_title"
+            app:backgroundTint="@color/vk_accent"
+            app:icon="@drawable/ic_sparkle"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAiRecommend"
+            style="@style/VkButton.Outline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:text="@string/btn_ai_recommend"
+            app:icon="@drawable/ic_check"
+            app:iconGravity="textStart" />
+
+        <!-- 설정 · 삼성 루틴 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSettings"
+                style="@style/VkButton.Outline"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/space_xs"
+                android:layout_weight="1"
+                android:text="@string/btn_settings"
+                app:icon="@drawable/ic_settings"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRoutine"
+                style="@style/VkButton.Outline"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_weight="1"
+                android:text="@string/btn_routine"
+                app:icon="@drawable/ic_routine"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/VkText.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_l"
+            android:layout_marginBottom="@dimen/space_s"
+            android:gravity="center"
+            android:text="Vibe-key Hardware Link"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</ScrollView>

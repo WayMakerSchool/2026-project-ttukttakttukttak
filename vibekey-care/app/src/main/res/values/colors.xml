@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      어르신 사용성을 위한 고대비(High Contrast) 밝은 색상 팔레트.
+      배경은 밝게, 글자는 아주 진하게 두어 명도 대비를 7:1 이상으로 유지합니다.
+    -->
+    <color name="vk_background">#FFF7F9FC</color>
+    <color name="vk_surface">#FFFFFFFF</color>
+    <color name="vk_surface_soft">#FFEDF2FA</color>
+
+    <color name="vk_text">#FF101418</color>
+    <color name="vk_text_secondary">#FF41505E</color>
+    <color name="vk_divider">#FFD3DCE6</color>
+
+    <color name="vk_primary">#FF0B57D0</color>
+    <color name="vk_primary_dark">#FF08409B</color>
+    <color name="vk_primary_soft">#FFDDE8FD</color>
+
+    <color name="vk_success">#FF12703A</color>
+    <color name="vk_success_soft">#FFDDF3E4</color>
+
+    <color name="vk_danger">#FFB3261E</color>
+    <color name="vk_danger_soft">#FFFBE3E1</color>
+
+    <color name="vk_accent">#FF8A2BE2</color>
+    <color name="vk_accent_soft">#FFF0E2FC</color>
+
+    <color name="vk_white">#FFFFFFFF</color>
+    <color name="vk_black">#FF000000</color>
+
+    <!-- 버튼 1/2/3 구분용 색 -->
+    <color name="vk_slot_1">#FF0B57D0</color>
+    <color name="vk_slot_2">#FF12703A</color>
+    <color name="vk_slot_3">#FFB26A00</color>
+</resources>

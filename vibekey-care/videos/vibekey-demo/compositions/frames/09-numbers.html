@@ -1,0 +1,129 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .nu-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .nu-stage { position: absolute; inset: 0; }
+
+    .nu-eyebrow {
+      position: absolute; left: 0; top: 98px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .nu-title {
+      position: absolute; left: 0; top: 142px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 56px;
+      letter-spacing: -0.025em; color: #101418; opacity: 0;
+    }
+
+    .nu-grid {
+      position: absolute; left: 340px; top: 272px; width: 1240px;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 26px;
+    }
+    .nu-card {
+      height: 208px; border-radius: 14px; padding: 30px 36px;
+      background: rgba(11,87,208,0.04); border: 1.5px solid rgba(11,87,208,0.2);
+      display: flex; flex-direction: column; justify-content: center; gap: 10px;
+      opacity: 0;
+    }
+    .nu-val {
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 82px;
+      line-height: 1; color: #0B57D0; font-variant-numeric: tabular-nums;
+    }
+    .nu-val span { font-size: 46px; }
+    .nu-lab { font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 28px; color: #101418; }
+    .nu-sub { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 19px; color: #41505E; }
+
+    .nu-foot {
+      position: absolute; left: 0; top: 762px; width: 1920px; text-align: center;
+      font-family: "Noto Sans KR", sans-serif; font-weight: 400; font-size: 27px; color: #41505E; opacity: 0;
+    }
+    .nu-foot b { font-weight: 700; color: #101418; }
+  </style>
+
+  <div id="root" data-composition-id="09-numbers" data-start="0" data-duration="15" data-width="1920" data-height="1080">
+    <div id="nu-bg" class="clip nu-bg" data-start="0" data-duration="15" data-track-index="0"></div>
+
+    <div id="nu-stage" class="clip nu-stage" data-start="0" data-duration="15" data-track-index="1">
+      <div class="nu-eyebrow" id="nu-eyebrow">확인된 수치</div>
+      <div class="nu-title" id="nu-title">지어낸 숫자는 없습니다</div>
+
+      <div class="nu-grid">
+        <div class="nu-card" id="nu-c0">
+          <div class="nu-val" id="nu-v0">0<span>개</span></div>
+          <div class="nu-lab">자동 테스트</div>
+          <div class="nu-sub">펌웨어 41 + 앱 48</div>
+        </div>
+        <div class="nu-card" id="nu-c1">
+          <div class="nu-val" id="nu-v1">0<span>%</span></div>
+          <div class="nu-lab">플래시 사용</div>
+          <div class="nu-sub">277,057 / 3,342,336 B</div>
+        </div>
+        <div class="nu-card" id="nu-c2">
+          <div class="nu-val" id="nu-v2">0<span>%</span></div>
+          <div class="nu-lab">RAM 사용</div>
+          <div class="nu-sub">22,608 / 327,680 B</div>
+        </div>
+        <div class="nu-card" id="nu-c3">
+          <div class="nu-val" id="nu-v3">0<span>원</span></div>
+          <div class="nu-lab">부품값</div>
+          <div class="nu-sub">5종 · XIAO ESP32-S3 포함</div>
+        </div>
+      </div>
+
+      <div class="nu-foot" id="nu-foot">모두 <b>빌드 산출물과 테스트 실행</b>에서 나온 값입니다.</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      var SPEC = [
+        { id: "nu-v0", to: 89,    unit: "개",  comma: false },
+        { id: "nu-v1", to: 8,     unit: "%",   comma: false },
+        { id: "nu-v2", to: 6,     unit: "%",   comma: false },
+        { id: "nu-v3", to: 14690, unit: "원",  comma: true }
+      ];
+
+      tl.fromTo("#nu-eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.15);
+      tl.fromTo("#nu-title", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.58, ease: "power3.out" }, 0.45);
+
+      /* ---- Scene 2 (3.0–11.0) : 카드가 0.6초 간격, 숫자는 counting-dynamic-scale ---- */
+      for (var i = 0; i < SPEC.length; i++) {
+        (function (s, idx) {
+          var at = 3.0 + idx * 0.6;
+          var el = document.getElementById(s.id);
+          var unit = '<span>' + s.unit + '</span>';
+          var proxy = { v: 0 };
+          tl.fromTo("#nu-c" + idx,
+            { opacity: 0, y: 30, scale: 0.96, transformOrigin: "50% 50%" },
+            { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, at);
+          tl.to(proxy, {
+            v: s.to, duration: 1.5, ease: "power2.out",
+            onUpdate: function () {
+              var n = Math.round(proxy.v);
+              el.innerHTML = (s.comma ? n.toLocaleString("en-US") : String(n)) + unit;
+            }
+          }, at + 0.18);
+          /* 다 세고 나면 살짝 커졌다 안착 — 도착을 몸으로 알린다 */
+          tl.to("#nu-v" + idx, { scale: 1.06, duration: 0.16, ease: "power2.out", transformOrigin: "0% 50%" }, at + 1.68);
+          tl.to("#nu-v" + idx, { scale: 1, duration: 0.34, ease: "power2.inOut", transformOrigin: "0% 50%" }, at + 1.85);
+        })(SPEC[i], i);
+      }
+
+      /* ---- Scene 3 (11.0–15.0) : 근거 한 줄. 이후 정지 ---- */
+      tl.fromTo("#nu-foot", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 11.2);
+
+      window.__timelines["09-numbers"] = tl;
+    })();
+  </script>
+</template>

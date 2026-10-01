@@ -1,0 +1,177 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .cr-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .cr-stage { position: absolute; inset: 0; }
+
+    .cr-eyebrow {
+      position: absolute; left: 0; top: 96px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px;
+      letter-spacing: 0.08em; color: #0B57D0; opacity: 0;
+    }
+    .cr-title {
+      position: absolute; left: 0; top: 140px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 58px;
+      letter-spacing: -0.025em; color: #101418; opacity: 0;
+    }
+
+    .cr-end {
+      position: absolute; top: 356px; width: 200px; height: 300px; border-radius: 20px;
+      border: 3px solid #101418; background: #FFFFFF;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      opacity: 0;
+    }
+    .cr-endname { font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 27px; color: #101418; }
+    .cr-endsub { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 17px; color: #41505E; }
+    .cr-phonescreen {
+      width: 132px; height: 96px; border-radius: 10px;
+      background: rgba(11,87,208,0.06); border: 1.5px solid rgba(11,87,208,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 21px; color: #41505E;
+    }
+
+    .cr-pkt {
+      position: absolute; top: 452px; left: 386px; display: flex; gap: 7px; opacity: 0;
+    }
+    .cr-byte {
+      width: 74px; height: 74px; border-radius: 9px;
+      background: rgba(11,87,208,0.06); border: 1.5px solid rgba(11,87,208,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 22px; color: #0B57D0;
+    }
+
+    .cr-badge {
+      position: absolute; top: 700px; left: 0; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 44px; opacity: 0;
+    }
+    .cr-retry {
+      position: absolute; top: 274px; left: 0; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 600; font-size: 30px; color: #B26A00; opacity: 0;
+    }
+    .cr-evidence {
+      position: absolute; top: 800px; left: 0; width: 1920px; text-align: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 22px;
+      color: #41505E; opacity: 0; letter-spacing: 0.01em;
+    }
+    .cr-spark { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #B3261E; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="07-crc-reject" data-start="0" data-duration="18" data-width="1920" data-height="1080">
+    <div id="cr-bg" class="clip cr-bg" data-start="0" data-duration="18" data-track-index="0"></div>
+
+    <div id="cr-stage" class="clip cr-stage" data-start="0" data-duration="18" data-track-index="1">
+      <div class="cr-eyebrow" id="cr-eyebrow">한 비트라도 틀어지면</div>
+      <div class="cr-title" id="cr-title">받지 않고, 다시 받는다</div>
+
+      <div class="cr-end" id="cr-dev" style="left: 150px;">
+        <div class="cr-endname">기기</div>
+        <div class="cr-endsub">ESP32-S3</div>
+      </div>
+      <div class="cr-end" id="cr-phone" style="left: 1570px;">
+        <div class="cr-phonescreen" id="cr-screen">대기</div>
+        <div class="cr-endname">폰</div>
+      </div>
+
+      <div class="cr-pkt" id="cr-pkt">
+        <div class="cr-byte" id="cr-by0">AA</div>
+        <div class="cr-byte" id="cr-by1">03</div>
+        <div class="cr-byte" id="cr-by2">01</div>
+        <div class="cr-byte" id="cr-by3">02</div>
+        <div class="cr-byte" id="cr-by4">B1</div>
+        <div class="cr-byte" id="cr-by5">29</div>
+        <div class="cr-byte" id="cr-by6">55</div>
+      </div>
+
+      <div class="cr-badge" id="cr-badge">✕ CRC 불일치</div>
+      <div class="cr-retry" id="cr-retry">ACK 없음 → 재전송</div>
+      <div class="cr-evidence" id="cr-evidence">firmware/test/test_vkp.cpp · 손상 주입 100,000건 검증</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      var stage = document.getElementById("cr-stage");
+      /* particle-burst 용 파편 */
+      var SPARKS = 16;
+      for (var p = 0; p < SPARKS; p++) {
+        var d = document.createElement("div");
+        d.className = "cr-spark";
+        d.id = "cr-spark-" + p;
+        d.style.left = "1212px";
+        d.style.top = "484px";
+        stage.appendChild(d);
+      }
+
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0.0–4.0) : 프레임이 기기에서 출발한다 ---- */
+      tl.fromTo("#cr-eyebrow", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 0.15);
+      tl.fromTo("#cr-title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.45);
+      tl.fromTo("#cr-dev", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.1);
+      tl.fromTo("#cr-phone", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 1.3);
+      tl.fromTo("#cr-pkt", { opacity: 0, x: -60 }, { opacity: 1, x: 0, duration: 0.5, ease: "power3.out" }, 2.1);
+      tl.to("#cr-pkt", { x: 210, duration: 1.4, ease: "none" }, 2.7);
+
+      /* ---- Scene 2 (4.0–8.0) : 비트가 뒤집히고, 폰이 버린다 ---- */
+      /* chromatic-glitch: 짧고 거칠게, 세 바이트가 적색으로 */
+      var bad = ["#cr-by2", "#cr-by4", "#cr-by5"];
+      for (var b = 0; b < bad.length; b++) {
+        tl.to(bad[b], { color: "#B3261E", borderColor: "#B3261E", backgroundColor: "rgba(179,38,30,0.10)", duration: 0.08, ease: "none" }, 4.1 + b * 0.06);
+        tl.to(bad[b], { x: 5, duration: 0.04, ease: "none" }, 4.1 + b * 0.06);
+        tl.to(bad[b], { x: -4, duration: 0.04, ease: "none" }, 4.16 + b * 0.06);
+        tl.to(bad[b], { x: 0, duration: 0.05, ease: "none" }, 4.22 + b * 0.06);
+      }
+      tl.set("#cr-by2", { textContent: "F1" }, 4.14);
+      tl.set("#cr-by4", { textContent: "6C" }, 4.20);
+      tl.to("#cr-pkt", { x: 546, duration: 1.5, ease: "none" }, 4.4);
+      /* 폰에 닿는 순간 판정 */
+      tl.set("#cr-badge", { color: "#B3261E", textContent: "✕ CRC 불일치" }, 5.9);
+      tl.fromTo("#cr-badge", { opacity: 0, y: 16, scale: 0.94, transformOrigin: "50% 50%" }, { opacity: 1, y: 0, scale: 1, duration: 0.38, ease: "back.out(2)" }, 5.9);
+      /* particle-burst: 프레임이 흩어져 사라진다 */
+      tl.to("#cr-pkt", { opacity: 0, scale: 0.9, duration: 0.28, ease: "power2.in", transformOrigin: "50% 50%" }, 6.25);
+      for (var q = 0; q < SPARKS; q++) {
+        var ang = (Math.PI * 2 * q) / SPARKS;
+        tl.set("#cr-spark-" + q, { opacity: 1, x: 0, y: 0, scale: 1 }, 6.25);
+        tl.to("#cr-spark-" + q, {
+          x: Math.cos(ang) * (150 + (q % 4) * 26),
+          y: Math.sin(ang) * (110 + (q % 3) * 22),
+          scale: 0.2, opacity: 0, duration: 0.75, ease: "power3.out"
+        }, 6.25);
+      }
+      /* 폰 화면은 그대로다 — 이게 요점 */
+
+      /* ---- Scene 3 (8.0–13.0) : 재전송, 이번엔 통과 ---- */
+      tl.fromTo("#cr-retry", { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" }, 8.2);
+      tl.to("#cr-badge", { opacity: 0, duration: 0.3, ease: "power2.in" }, 8.6);
+      /* 손상 흔적을 지우고 원래 값으로 되돌린 뒤 다시 출발 */
+      tl.set(["#cr-by2", "#cr-by4", "#cr-by5"], { color: "#0B57D0", borderColor: "rgba(11,87,208,0.28)", backgroundColor: "rgba(11,87,208,0.06)" }, 9.0);
+      tl.set("#cr-by2", { textContent: "01" }, 9.0);
+      tl.set("#cr-by4", { textContent: "B1" }, 9.0);
+      tl.set("#cr-pkt", { x: 0, scale: 1 }, 9.0);
+      tl.to("#cr-pkt", { opacity: 1, duration: 0.3, ease: "power2.out" }, 9.05);
+      tl.to("#cr-pkt", { x: 546, duration: 2.0, ease: "none" }, 9.4);
+      tl.set("#cr-badge", { color: "#0B57D0", textContent: "✓ CRC 일치" }, 11.5);
+      tl.fromTo("#cr-badge", { opacity: 0, y: 16, scale: 0.94, transformOrigin: "50% 50%" }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(2)" }, 11.5);
+      /* 그제서야 폰이 반응한다 */
+      tl.to("#cr-screen", { backgroundColor: "rgba(11,87,208,0.16)", borderColor: "#0B57D0", color: "#0B57D0", duration: 0.35, ease: "power2.out" }, 11.85);
+      tl.set("#cr-screen", { textContent: "전화 열림" }, 11.9);
+      tl.to("#cr-phone", { x: 6, duration: 0.05, ease: "none" }, 11.85);
+      tl.to("#cr-phone", { x: -5, duration: 0.05, ease: "none" }, 11.9);
+      tl.to("#cr-phone", { x: 0, duration: 0.07, ease: "power2.out" }, 11.96);
+
+      /* ---- Scene 4 (13.0–18.0) : 근거 ---- */
+      tl.fromTo("#cr-evidence", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 13.4);
+
+      window.__timelines["07-crc-reject"] = tl;
+    })();
+  </script>
+</template>

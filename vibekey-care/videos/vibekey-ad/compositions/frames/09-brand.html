@@ -1,0 +1,371 @@
+<template>
+  <div id="root" data-composition-id="09-brand" data-width="1920" data-height="1080">
+    <!-- full-bleed ground (clip layer, never on #root) -->
+    <div id="f09-ground" class="clip f09-ground" data-start="0" data-duration="6" data-track-index="0"></div>
+
+    <!-- screen "off" plate: sits UNDER the hoisted video, so the app picture reads as the screen turning on -->
+    <div class="f09-screen"></div>
+
+    <!-- ink bezel around the app screen (above the video so its border frames the picture) -->
+    <div class="f09-panel"></div>
+
+    <!-- the device -->
+    <div class="f09-device">
+      <svg viewBox="0 0 360 150" width="480" height="200" aria-hidden="true">
+        <g opacity="0.10"><rect x="9" y="23" width="350" height="106" rx="20" fill="#000000"/></g>
+        <rect id="f09-body" x="5" y="15" width="350" height="110" rx="20" fill="#1E293B" stroke="#475569" stroke-width="3"/>
+        <rect x="100" y="28" width="160" height="12" fill="#334155"/>
+        <rect x="160" y="125" width="40" height="20" rx="6" fill="#94A3B8"/>
+        <g id="f09-btn1">
+          <circle cx="60" cy="70" r="30" fill="#0B57D0" stroke="#083F9B" stroke-width="3"/>
+          <circle cx="60" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/>
+        </g>
+        <g id="f09-btn2">
+          <circle cx="180" cy="70" r="30" fill="#12703A" stroke="#0B4F27" stroke-width="3"/>
+          <circle cx="180" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/>
+        </g>
+        <g id="f09-btn3">
+          <circle cx="300" cy="70" r="30" fill="#B26A00" stroke="#8A5200" stroke-width="3"/>
+          <circle cx="300" cy="70" r="12" fill="#FFFFFF" opacity="0.4"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- the payoff: one coloured line per button, landing on its own column in the app screen -->
+    <svg class="f09-links" viewBox="0 0 1920 1080" width="1920" height="1080" aria-hidden="true">
+      <path id="f09-link1" d="M 800 341 L 800 608" stroke="#0B57D0" stroke-width="8" fill="none" stroke-linecap="butt"/>
+      <path id="f09-link2" d="M 960 341 L 960 608" stroke="#12703A" stroke-width="8" fill="none" stroke-linecap="butt"/>
+      <path id="f09-link3" d="M 1120 341 L 1120 608" stroke="#B26A00" stroke-width="8" fill="none" stroke-linecap="butt"/>
+    </svg>
+
+    <!-- mono legend: the three button numbers in their three colours -->
+    <div class="f09-legend">
+      <span class="f09-n1">01</span><span class="f09-sep">·</span><span class="f09-n2">02</span><span class="f09-sep">·</span><span class="f09-n3">03</span>
+    </div>
+
+    <!-- the wordmark: six glyphs assembled out of a three-colour depth cloud -->
+    <div class="f09-mark">
+      <div class="f09-mark-stage">
+        <span class="f09-frag" data-target-x="-402" data-hue="1">바</span>
+        <span class="f09-frag" data-target-x="-250" data-hue="1">이</span>
+        <span class="f09-frag" data-target-x="-98" data-hue="2">브</span>
+        <span class="f09-frag" data-target-x="54" data-hue="2">키</span>
+        <span class="f09-frag" data-target-x="250" data-hue="3">케</span>
+        <span class="f09-frag" data-target-x="402" data-hue="3">어</span>
+      </div>
+    </div>
+
+    <div class="f09-tag">버튼 하나로 앱이 열립니다</div>
+
+    <!-- framework-owned media: the real app home screen, hoisted to the host root by the assembler -->
+    <video id="f09-clip" src="assets/clip-home.mp4" muted playsinline preload="auto"
+         data-start="0.78" data-duration="5.22" data-media-start="0" data-track-index="1"
+         data-frame-video="approved" data-frame-video-x="681" data-frame-video-y="608"
+         data-frame-video-width="560" data-frame-video-height="252" data-frame-video-fit="cover"></video>
+  </div>
+
+  <style>
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 800;
+      font-display: block;
+      src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src: url("assets/fonts/JetBrainsMono.ttf") format("truetype");
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+    }
+
+    .f09-ground {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      background: #f7f9fc;
+    }
+
+    /* under the video on purpose — the dark plate is the screen before it lights up */
+    .f09-screen {
+      position: absolute;
+      left: 681px;
+      top: 608px;
+      width: 560px;
+      height: 252px;
+      background: #101418;
+    }
+
+    /* Pre-hoist safety net: assemble-index lifts this <video> to the host root with exactly
+       this rectangle and drops frame-local classes, so the rule is dead after assembly and
+       pixel-identical before it. */
+    .f09-clip-src {
+      position: absolute;
+      left: 681px;
+      top: 608px;
+      width: 560px;
+      height: 252px;
+      object-fit: cover;
+    }
+
+    /* above the video — the ink bezel frames the real screenshot */
+    .f09-panel {
+      position: absolute;
+      left: 673px;
+      top: 600px;
+      width: 576px;
+      height: 268px;
+      border: 8px solid #101418;
+      background: transparent;
+      z-index: 20;
+    }
+
+    .f09-device {
+      position: absolute;
+      left: 720px;
+      top: 208px;
+      width: 480px;
+      height: 200px;
+      z-index: 25;
+    }
+
+    .f09-links {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      z-index: 30;
+    }
+
+    .f09-legend {
+      position: absolute;
+      left: 96px;
+      top: 84px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      line-height: 28px;
+      color: #101418;
+      z-index: 35;
+    }
+    .f09-n1 { color: #0b57d0; }
+    .f09-n2 { color: #12703a; }
+    .f09-n3 { color: #b26a00; }
+    .f09-sep { color: #101418; padding: 0 10px; }
+
+    .f09-mark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      perspective: 1400px;
+      z-index: 35;
+    }
+    .f09-mark-stage {
+      position: absolute;
+      left: 960px;
+      top: 409px;
+      width: 0;
+      height: 0;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+    .f09-frag {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: block;
+      width: 152px;
+      height: 141px;
+      line-height: 141px;
+      text-align: center;
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: 153.6px;
+      letter-spacing: -0.01em;
+      color: #101418;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      will-change: transform, opacity;
+    }
+
+    .f09-tag {
+      position: absolute;
+      left: 0;
+      top: 504px;
+      width: 1920px;
+      height: 48px;
+      line-height: 48px;
+      text-align: center;
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 400;
+      font-size: 42px;
+      letter-spacing: 0.01em;
+      color: #101418;
+      z-index: 35;
+    }
+  </style>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      var tl = gsap.timeline({ paused: true });
+
+      var INK = "#101418";
+      var HUES = { "1": "#0B57D0", "2": "#12703A", "3": "#B26A00" };
+
+      var device = document.querySelector(".f09-device");
+      var panel = document.querySelector(".f09-panel");
+      var screenPlate = document.querySelector(".f09-screen");
+      var legend = document.querySelector(".f09-legend");
+      var tag = document.querySelector(".f09-tag");
+      var markStage = document.querySelector(".f09-mark-stage");
+      var frags = Array.prototype.slice.call(document.querySelectorAll(".f09-frag"));
+      var links = [
+        document.querySelector("#f09-link1"),
+        document.querySelector("#f09-link2"),
+        document.querySelector("#f09-link3")
+      ];
+      var btns = [
+        document.querySelector("#f09-btn1"),
+        document.querySelector("#f09-btn2"),
+        document.querySelector("#f09-btn3")
+      ];
+      var btnOrigins = ["60 70", "180 70", "300 70"];
+
+      /* ---- setup: park every element in its pre-roll state (deterministic, no random) ---- */
+
+      var lengths = links.map(function (p) {
+        var L = p.getTotalLength ? p.getTotalLength() : 297;
+        return L > 0 ? L : 297;
+      });
+      links.forEach(function (p, i) {
+        gsap.set(p, { strokeDasharray: lengths[i] + " " + lengths[i], strokeDashoffset: lengths[i] });
+      });
+
+      // depth-scatter-assemble: index-derived cloud points (golden angle + stepped depth)
+      var GOLDEN = Math.PI * (3 - Math.sqrt(5));
+      var RADIUS_X = 440;
+      var RADIUS_Y = 118;
+      var Z_NEAR = 340;
+      var Z_FAR = -300;
+      var TUMBLE = 62;
+      var n = frags.length;
+      var scatter = frags.map(function (el, i) {
+        var a = i * GOLDEN;
+        var depthT = n > 1 ? i / (n - 1) : 0;
+        return {
+          x: Math.cos(a) * RADIUS_X,
+          y: Math.sin(a) * RADIUS_Y,
+          z: Z_NEAR - depthT * (Z_NEAR - Z_FAR),
+          rotationX: Math.sin(a) * TUMBLE,
+          rotationY: Math.cos(a) * TUMBLE
+        };
+      });
+      frags.forEach(function (el, i) {
+        gsap.set(el, {
+          xPercent: -50,
+          yPercent: -50,
+          x: scatter[i].x,
+          y: scatter[i].y,
+          z: scatter[i].z,
+          rotationX: scatter[i].rotationX,
+          rotationY: scatter[i].rotationY,
+          opacity: 0,
+          color: HUES[el.getAttribute("data-hue")] || INK
+        });
+      });
+      gsap.set(markStage, { rotationY: -20 });
+
+      /* ---- Scene 1 (0.0-1.5): the device and the app screen rise from below ---- */
+
+      // a hard cut lands on solid shapes already in motion — no fade-up from an empty frame
+      tl.fromTo(device, { y: 214 }, { y: 0, duration: 0.62, ease: "power3.out" }, 0);
+      tl.fromTo(
+        [panel, screenPlate],
+        { y: 236 },
+        { y: 0, duration: 0.7, ease: "power3.out" },
+        0.06
+      );
+      // 0.78s — the hoisted clip starts: the screen lights up with the real home screen.
+      tl.fromTo(legend, { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.34, ease: "power2.out" }, 1.1);
+
+      /* ---- Scene 2 (1.5-2.8): the linking beat — button 1/2/3 joined to Phone/Maps/Photos ---- */
+
+      [0, 1, 2].forEach(function (i) {
+        var t = 1.42 + i * 0.2;
+        // the button fires
+        tl.to(btns[i], { scale: 1.09, duration: 0.12, ease: "power2.out", svgOrigin: btnOrigins[i] }, t);
+        tl.to(btns[i], { scale: 1, duration: 0.22, ease: "power2.inOut", svgOrigin: btnOrigins[i] }, t + 0.12);
+        // its line draws down onto the matching column
+        tl.to(links[i], { strokeDashoffset: 0, duration: 0.46, ease: "power2.inOut" }, t);
+      });
+      // 2.28-2.66 — held. The whole picture reads at once.
+
+      /* ---- Scene 3 (2.8-4.2): the centre opens and the name assembles ---- */
+
+      // the lines are drawn back into the app
+      [0, 1, 2].forEach(function (i) {
+        tl.to(
+          links[i],
+          { strokeDashoffset: -lengths[i], duration: 0.32, ease: "power2.in" },
+          2.66 + i * 0.05
+        );
+      });
+      // the device withdraws upward, opening the middle band
+      tl.to(device, { y: -120, duration: 0.52, ease: "power3.inOut" }, 2.84);
+
+      // the three colour fragments converge and become the wordmark
+      tl.to(markStage, { rotationY: 0, duration: 0.9, ease: "power1.out" }, 3.06);
+      frags.forEach(function (el, i) {
+        var t = 3.06 + i * 0.05;
+        tl.to(
+          el,
+          {
+            x: Number(el.getAttribute("data-target-x")),
+            y: 0,
+            z: 0,
+            rotationX: 0,
+            rotationY: 0,
+            duration: 0.64,
+            ease: "power3.out"
+          },
+          t
+        );
+        tl.to(el, { opacity: 1, duration: 0.26, ease: "power1.out" }, t + 0.04);
+        // the accent reads all through the flight; ink only as it seats
+        tl.to(el, { color: INK, duration: 0.26, ease: "power1.inOut" }, t + 0.38);
+      });
+
+      /* ---- Scene 4 (4.2-6.0): the sub-line lands, then the frame is completely still ---- */
+
+      tl.fromTo(tag, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.28, ease: "power2.out" }, 3.92);
+
+      // hold the full 6.00s: nothing moves from 4.20 to the hard cut.
+      tl.to({}, { duration: 0.01 }, 5.99);
+
+      window.__timelines["09-brand"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,5 @@
+# 이 스케치의 기본 보드를 고정합니다.
+# XIAO_ESP32C3 와 XIAO_ESP32S3 는 목록에서 바로 옆에 붙어 있고 한 글자만 달라
+# 잘못 고르기 쉽습니다. 바이브키 기기는 S3 입니다.
+default_fqbn: esp32:esp32:XIAO_ESP32S3
+default_port: /dev/cu.usbmodem101

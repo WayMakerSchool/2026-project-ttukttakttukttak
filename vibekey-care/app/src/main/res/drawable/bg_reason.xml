@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI가 "왜 이 앱을 넣었는지" 설명하는 말풍선 배경 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/vk_accent_soft" />
+    <corners android:radius="16dp" />
+</shape>

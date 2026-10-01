@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    바이브키 기기(버튼 3개 + C타입 단자)를 그린 그림입니다.
+    화면에서 이 그림 바로 아래에 각 버튼이 여는 앱을 붙여 보여 주기 때문에,
+    "왼쪽 단추를 누르면 카카오톡이 열린다"는 것을 글을 읽지 않고도 알 수 있습니다.
+
+    버튼 가운데 좌표는 x = 60 / 180 / 300 (가로 360 기준 = 1/6, 3/6, 5/6)이라
+    화면에서 폭이 같은 칸 3개를 아래에 두면 각 버튼과 정확히 줄이 맞습니다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="150dp"
+    android:viewportWidth="360"
+    android:viewportHeight="150">
+
+    <!-- 기기 그림자 -->
+    <path
+        android:fillColor="#1A000000"
+        android:pathData="M29,23 L339,23 A20,20 0 0 1 359,43 L359,109 A20,20 0 0 1 339,129 L29,129 A20,20 0 0 1 9,109 L9,43 A20,20 0 0 1 29,23 Z" />
+
+    <!-- 기기 본체 -->
+    <path
+        android:fillColor="#FF1E293B"
+        android:strokeColor="#FF475569"
+        android:strokeWidth="3"
+        android:pathData="M25,15 L335,15 A20,20 0 0 1 355,35 L355,105 A20,20 0 0 1 335,125 L25,125 A20,20 0 0 1 5,105 L5,35 A20,20 0 0 1 25,15 Z" />
+
+    <!-- C타입 케이블 단자 (아래쪽 가운데) -->
+    <path
+        android:fillColor="#FF94A3B8"
+        android:pathData="M166,125 L194,125 A6,6 0 0 1 200,131 L200,139 A6,6 0 0 1 194,145 L166,145 A6,6 0 0 1 160,139 L160,131 A6,6 0 0 1 166,125 Z" />
+
+    <!-- 1번 버튼 (파랑) -->
+    <path
+        android:fillColor="#FF0B57D0"
+        android:strokeColor="#FF083F9B"
+        android:strokeWidth="3"
+        android:pathData="M30,70 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M48,70 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+
+    <!-- 2번 버튼 (초록) -->
+    <path
+        android:fillColor="#FF12703A"
+        android:strokeColor="#FF0B4F27"
+        android:strokeWidth="3"
+        android:pathData="M150,70 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M168,70 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+
+    <!-- 3번 버튼 (주황) -->
+    <path
+        android:fillColor="#FFB26A00"
+        android:strokeColor="#FF8A5200"
+        android:strokeWidth="3"
+        android:pathData="M270,70 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0" />
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M288,70 a12,12 0 1,0 24,0 a12,12 0 1,0 -24,0" />
+
+    <!-- 기기 위쪽 작은 부품 표현 -->
+    <path
+        android:fillColor="#FF334155"
+        android:pathData="M100,28 L260,28 L260,40 L100,40 Z" />
+</vector>

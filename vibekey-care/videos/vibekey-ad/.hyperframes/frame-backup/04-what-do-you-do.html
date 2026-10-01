@@ -1,0 +1,468 @@
+<template>
+  <style>
+    /* ---------- fonts: embedded from disk, never fetched ---------- */
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 800;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 700;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Bold.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Gothic A1";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src:
+        url("assets/fonts/GothicA1-Regular.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "Noto Sans KR";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src:
+        url("assets/fonts/NotoSansKR.ttf") format("truetype");
+    }
+    @font-face {
+      font-family: "JetBrains Mono";
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+      src:
+        url("assets/fonts/JetBrainsMono.ttf") format("truetype");
+    }
+
+    /* ---------- frame root (styled by #root, never by a class) ---------- */
+    #root {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      container-type: size;
+      font-family: "Gothic A1", sans-serif;
+      color: #101418;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* full-bleed ground lives on a clip layer, not on #root */
+    .wdyd-bg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: auto;
+      bottom: auto;
+      width: 1920px;
+      height: 1080px;
+      background: #f7f9fc;
+    }
+
+    /* ---------- phone stage (untimed: it hosts the framework-owned video) ---------- */
+    #wdyd-stage {
+      position: absolute;
+      left: 1300px;
+      top: 36px;
+      width: 412px;
+      height: 852px;
+    }
+    .wdyd-slab {
+      position: absolute;
+      left: 20px;
+      top: 20px;
+      width: 392px;
+      height: 832px;
+      background: #adcbfb;
+      border-radius: 46px;
+    }
+    .wdyd-body {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 392px;
+      height: 832px;
+      background: #101418;
+      border-radius: 46px;
+    }
+    .wdyd-screen {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      width: 360px;
+      height: 800px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: #f7f9fc;
+    }
+    #f04-still-a, #f04-still-b, .wdyd-vid {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: auto;
+      bottom: auto;
+      width: 360px;
+      height: 800px;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ---------- left column ---------- */
+    .wdyd-left {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: auto;
+      bottom: auto;
+      width: 1920px;
+      height: 1080px;
+    }
+
+    .wdyd-chrome {
+      position: absolute;
+      left: 96px;
+      top: 52px;
+      width: 1040px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wdyd-mono {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.25cqw;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      color: #101418;
+    }
+    .wdyd-pill {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.25cqw;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      color: #101418;
+      background: #f7f9fc;
+      border: 4px solid #101418;
+      border-radius: 999px;
+      padding: 5px 22px 7px;
+    }
+
+    .wdyd-head {
+      position: absolute;
+      left: 96px;
+      top: 168px;
+      width: 1104px;
+    }
+    .wdyd-h-line {
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: 8cqw;
+      /* 한글은 0.9 에서 위아래 줄이 서로 파고든다(받침과 다음 줄 초성이 겹침).
+         라틴 기준 디스플레이 행간을 그대로 쓰면 안 되는 자리다. */
+      line-height: 1.14;
+      letter-spacing: -0.01em;
+      color: #101418;
+      white-space: nowrap;
+    }
+
+    .wdyd-sub {
+      position: absolute;
+      left: 96px;
+      top: 486px;
+      width: 1000px;
+      font-family: "Noto Sans KR", sans-serif;
+      font-weight: 400;
+      font-size: 2.3cqw;
+      line-height: 1.35;
+      color: #2a2a2a;
+      white-space: nowrap;
+    }
+
+    .wdyd-row {
+      position: absolute;
+      left: 96px;
+      width: 640px;
+      height: 72px;
+    }
+    #wdyd-row-1 {
+      top: 606px;
+    }
+    #wdyd-row-2 {
+      top: 698px;
+    }
+    #wdyd-row-3 {
+      top: 790px;
+    }
+    .wdyd-plate {
+      position: absolute;
+      left: -16px;
+      top: 0;
+      width: 656px;
+      height: 72px;
+    }
+    #wdyd-row-1 .wdyd-plate {
+      background: rgba(11, 87, 208, 0.16);
+    }
+    #wdyd-row-2 .wdyd-plate {
+      background: rgba(18, 112, 58, 0.16);
+    }
+    #wdyd-row-3 .wdyd-plate {
+      background: rgba(178, 106, 0, 0.16);
+    }
+    .wdyd-dot {
+      position: absolute;
+      left: 0;
+      top: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 4px solid #101418;
+    }
+    #wdyd-row-1 .wdyd-dot {
+      background: #0b57d0;
+    }
+    #wdyd-row-2 .wdyd-dot {
+      background: #12703a;
+    }
+    #wdyd-row-3 .wdyd-dot {
+      background: #b26a00;
+    }
+    .wdyd-name {
+      position: absolute;
+      left: 76px;
+      top: 0;
+      height: 72px;
+      line-height: 72px;
+      font-family: "Gothic A1", sans-serif;
+      font-weight: 800;
+      font-size: 2.8cqw;
+      letter-spacing: -0.01em;
+      color: #101418;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div
+    id="root"
+    data-composition-id="04-what-do-you-do"
+    data-duration="7.5"
+    data-width="1920"
+    data-height="1080"
+  >
+    <!-- ground -->
+    <div id="f04-what-do-you-do-el-1"
+      class="clip wdyd-bg"
+      data-start="0"
+      data-duration="7.5"
+      data-track-index="0"
+    ></div>
+
+    <!-- hero surface: drawn phone body holding the real screen recording.
+         Untimed on purpose: a timed media element may not sit inside a timed wrapper. -->
+    <div id="wdyd-stage">
+      <div class="wdyd-slab"></div>
+      <div class="wdyd-body">
+        <div class="wdyd-screen">
+          <!-- 조립 단계에서 재생 속도(data-playback-rate)가 버려지므로 "느리게 재생해
+               멈춘 것처럼" 을 쓸 수 없다. 그래서 앞뒤를 정지 이미지로 채우고 가운데만
+               실시간으로 재생한다. 1.5초에 시작해야 화면 속 체크가 1.80 / 3.12 / 4.57초에
+               떨어져, 왼쪽 색 사다리의 1.83 / 3.15 / 4.60 박과 그대로 맞는다. -->
+          <img id="f04-still-a" class="clip" src="assets/still-pick-start.png"
+               data-start="0" data-duration="1.5" data-track-index="1" alt="" />
+          <video id="f04-clip" src="assets/clip-pick.mp4" muted playsinline preload="auto"
+                 data-start="1.5" data-duration="4.7" data-media-start="0" data-track-index="1"
+                 data-frame-video="approved" data-frame-video-x="1316" data-frame-video-y="52"
+                 data-frame-video-width="360" data-frame-video-height="800" data-frame-video-fit="cover"></video>
+          <img id="f04-still-b" class="clip" src="assets/still-pick-end.png"
+               data-start="6.2" data-duration="1.3" data-track-index="1" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <!-- left 60: the copy + the colour ladder -->
+    <div id="f04-what-do-you-do-el-2"
+      class="clip wdyd-left"
+      data-start="0"
+      data-duration="7.5"
+      data-track-index="2"
+    >
+      <div class="wdyd-chrome">
+        <span class="wdyd-mono">VIBEKEY CARE</span>
+        <span class="wdyd-pill">FIRST RUN</span>
+      </div>
+
+      <div class="wdyd-head">
+        <div class="wdyd-h-line" id="wdyd-h1">앱 이름은</div>
+        <div class="wdyd-h-line" id="wdyd-h2">묻지 않습니다</div>
+      </div>
+
+      <div class="wdyd-sub" id="wdyd-sub">무엇을 자주 하시는지만</div>
+
+      <div class="wdyd-row" id="wdyd-row-1">
+        <div class="wdyd-plate"></div>
+        <div class="wdyd-dot"></div>
+        <div class="wdyd-name">전화 걸기</div>
+      </div>
+      <div class="wdyd-row" id="wdyd-row-2">
+        <div class="wdyd-plate"></div>
+        <div class="wdyd-dot"></div>
+        <div class="wdyd-name">길 찾기</div>
+      </div>
+      <div class="wdyd-row" id="wdyd-row-3">
+        <div class="wdyd-plate"></div>
+        <div class="wdyd-dot"></div>
+        <div class="wdyd-name">사진 보기</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    (function () {
+      var ID = "04-what-do-you-do";
+      var root = document.querySelector('[data-composition-id="' + ID + '"]');
+      var q = function (sel) {
+        return root ? root.querySelectorAll(sel) : document.querySelectorAll(sel);
+      };
+      var one = function (sel) {
+        return root ? root.querySelector(sel) : document.querySelector(sel);
+      };
+
+      var tl = gsap.timeline({ paused: true });
+
+      var stage = one("#wdyd-stage");
+      var chrome = one(".wdyd-chrome");
+      var h1 = one("#wdyd-h1");
+      var h2 = one("#wdyd-h2");
+      var sub = one("#wdyd-sub");
+      var names = q(".wdyd-name");
+      var dots = q(".wdyd-dot");
+      var plates = q(".wdyd-plate");
+      var slab = document.querySelector(".wdyd-slab");
+
+      /* ---------- Scene 1 (0.0-1.6s) ----------
+         원래는 폰 전체가 오른쪽에서 미끄러져 들어왔다. 그런데 화면 안의 진짜 녹화는
+         조립 단계에서 최상위로 올라가고 그 좌표가 고정되기 때문에, 기기틀만 움직이면
+         틀과 화면이 어긋난다. 그래서 폰은 처음부터 제자리에 두고, 뒤에 깔린 판(slab)이
+         밀려 들어오면서 등장을 만든다. nudge-curve 의 느리게-빠르게-느리게는 그대로다. */
+      tl.fromTo(
+        slab,
+        { x: 240, autoAlpha: 0 },
+        { x: 216, autoAlpha: 1, duration: 0.23, ease: "power3.in" },
+        0
+      );
+      tl.fromTo(
+        slab,
+        { x: 216 },
+        { x: 60, duration: 0.21, ease: "none", immediateRender: false },
+        0.23
+      );
+      tl.fromTo(
+        slab,
+        { x: 60 },
+        { x: 0, duration: 0.71, ease: "power4.out", immediateRender: false },
+        0.44
+      );
+
+      tl.fromTo(
+        chrome,
+        { y: 14, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" },
+        0.2
+      );
+
+      /* ---------- Scene 2 (1.6-3.0s) — the line lands on the left; on the phone face
+         the first function (전화 걸기) is checked at 1.83s and the ladder answers. ---------- */
+      tl.fromTo(
+        h1,
+        { y: 42, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.52, ease: "power3.out" },
+        1.55
+      );
+      tl.fromTo(
+        h2,
+        { y: 42, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.52, ease: "power3.out" },
+        1.67
+      );
+      tl.fromTo(
+        sub,
+        { y: 24, autoAlpha: 0 },
+        { y: 0, autoAlpha: 1, duration: 0.42, ease: "power3.out" },
+        1.88
+      );
+
+      /* ---------- the colour ladder — one row per check, in the recording's own order.
+         전화 걸기 = #0B57D0 (1번) · 길 찾기 = #12703A (2번) · 사진 보기 = #B26A00 (3번).
+         Scene 2 seeds row 1; Scene 3 (3.0-5.2s) stacks rows 2 and 3. ---------- */
+      var rowAt = [2.45, 3.49, 4.94];
+      for (var i = 0; i < rowAt.length; i++) {
+        tl.fromTo(
+          names[i],
+          { x: -36, autoAlpha: 0 },
+          { x: 0, autoAlpha: 1, duration: 0.46, ease: "power3.out" },
+          rowAt[i]
+        );
+        tl.fromTo(
+          dots[i],
+          { scale: 0, autoAlpha: 0 },
+          { scale: 1, autoAlpha: 1, duration: 0.42, ease: "power3.out" },
+          rowAt[i] + 0.04
+        );
+      }
+
+      /* ---------- Scene 4 (5.2-7.5s) — the phone reads "3가지를 고르셨어요";
+         the three rows brighten together once, then settle. Still from 6.17s. ---------- */
+      tl.fromTo(
+        plates,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.22, ease: "power2.out" },
+        5.4
+      );
+      tl.fromTo(
+        plates,
+        { opacity: 1 },
+        {
+          opacity: 0.55,
+          duration: 0.55,
+          ease: "power3.out",
+          immediateRender: false
+        },
+        5.62
+      );
+      tl.fromTo(
+        dots,
+        { scale: 1 },
+        {
+          scale: 1.22,
+          duration: 0.22,
+          ease: "power2.out",
+          immediateRender: false
+        },
+        5.4
+      );
+      tl.fromTo(
+        dots,
+        { scale: 1.22 },
+        {
+          scale: 1,
+          duration: 0.55,
+          ease: "power3.out",
+          immediateRender: false
+        },
+        5.62
+      );
+
+      window.__timelines[ID] = tl;
+    })();
+  </script>
+</template>

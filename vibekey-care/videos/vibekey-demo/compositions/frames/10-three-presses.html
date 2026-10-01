@@ -1,0 +1,117 @@
+<template>
+  <style>
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+    @font-face { font-family: "Gothic A1"; src: url("assets/fonts/GothicA1-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+    @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf") format("truetype"); font-weight: 100 900; font-style: normal; font-display: block; }
+    @font-face { font-family: "JetBrains Mono"; src: url("assets/fonts/JetBrainsMono.ttf") format("truetype"); font-weight: 100 800; font-style: normal; font-display: block; }
+
+    #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+    .tp-bg { position: absolute; inset: 0; background: #F7F9FC; }
+    .tp-stage { position: absolute; inset: 0; }
+
+    .tp-btn {
+      position: absolute; top: 300px; width: 168px; height: 168px; border-radius: 50%;
+      border: 3px solid #101418; background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+      font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 60px; color: #101418;
+      opacity: 0;
+    }
+    .tp-fill { position: absolute; top: 300px; width: 168px; height: 168px; border-radius: 50%; opacity: 0; }
+
+    /* 프레임 1과 같은 손 도형 — 이번에는 멈추지 않는다 */
+    .tp-finger { position: absolute; left: 892px; top: 900px; width: 136px; height: 300px; opacity: 0; }
+    .tp-tip { position: absolute; left: 30px; top: 0; width: 76px; height: 108px; border-radius: 38px 38px 22px 22px; background: #101418; opacity: 0.9; }
+    .tp-body { position: absolute; left: 8px; top: 84px; width: 120px; height: 216px; border-radius: 56px 56px 0 0; background: #101418; opacity: 0.9; }
+
+    .tp-line {
+      position: absolute; left: 0; top: 574px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 84px;
+      letter-spacing: -0.03em; color: #101418; opacity: 0;
+    }
+    .tp-line em { font-style: normal; color: #0B57D0; }
+
+    .tp-ink { position: absolute; left: 0; top: 1080px; width: 1920px; height: 1080px; background: #101418; }
+    .tp-mark {
+      position: absolute; left: 0; top: 396px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 700; font-size: 104px;
+      letter-spacing: -0.03em; color: #F7F9FC; opacity: 0;
+    }
+    .tp-credit {
+      position: absolute; left: 0; top: 542px; width: 1920px; text-align: center;
+      font-family: "Gothic A1", sans-serif; font-weight: 500; font-size: 27px;
+      letter-spacing: 0.06em; color: #8B93A1; line-height: 1.7; opacity: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="10-three-presses" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+    <div id="tp-bg" class="clip tp-bg" data-start="0" data-duration="7.6" data-track-index="0"></div>
+
+    <div id="tp-stage" class="clip tp-stage" data-start="0" data-duration="7.6" data-track-index="1">
+      <div class="tp-fill" id="tp-f1" style="left: 686px; background: #0B57D0;"></div>
+      <div class="tp-fill" id="tp-f2" style="left: 876px; background: #12703A;"></div>
+      <div class="tp-fill" id="tp-f3" style="left: 1066px; background: #B26A00;"></div>
+      <div class="tp-btn" id="tp-b1" style="left: 686px;">1</div>
+      <div class="tp-btn" id="tp-b2" style="left: 876px;">2</div>
+      <div class="tp-btn" id="tp-b3" style="left: 1066px;">3</div>
+
+      <div class="tp-finger" id="tp-finger">
+        <div class="tp-tip"></div>
+        <div class="tp-body"></div>
+      </div>
+
+      <div class="tp-line" id="tp-line">어르신도, 버튼 <em>세 번</em>이면 끝.</div>
+    </div>
+
+    <div id="tp-close" class="clip tp-stage" data-start="7" data-duration="3" data-track-index="2">
+      <div class="tp-ink" id="tp-ink"></div>
+      <div class="tp-mark" id="tp-mark">바이브키</div>
+      <div class="tp-credit" id="tp-credit">팀 뚝딱뚝딱<br />2026 임베디드SW 경진대회 · 자유공모</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      var tl = gsap.timeline({ paused: true });
+
+      /* ---- Scene 1 (0.0–4.0) : 같은 손이 돌아와, 이번에는 누른다 ---- */
+      tl.fromTo("#tp-b1", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 0.1);
+      tl.fromTo("#tp-b2", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 0.2);
+      tl.fromTo("#tp-b3", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.34, ease: "power3.out" }, 0.3);
+      /* 프레임 1과 같은 자리에서 올라온다 */
+      tl.fromTo("#tp-finger", { opacity: 0, y: 0, x: -190 }, { opacity: 1, y: -430, x: -190, duration: 0.85, ease: "power3.out" }, 0.7);
+
+      var presses = [
+        { btn: "#tp-b1", fill: "#tp-f1", x: -190, at: 1.6 },
+        { btn: "#tp-b2", fill: "#tp-f2", x: 0,    at: 2.3 },
+        { btn: "#tp-b3", fill: "#tp-f3", x: 190,  at: 3.0 }
+      ];
+      for (var i = 0; i < presses.length; i++) {
+        var p = presses[i];
+        if (i > 0) tl.to("#tp-finger", { x: p.x, duration: 0.34, ease: "power2.inOut" }, p.at - 0.36);
+        /* press-release-spring */
+        tl.to("#tp-finger", { y: -392, duration: 0.1, ease: "power2.in" }, p.at);
+        tl.to(p.btn, { scale: 0.88, duration: 0.1, ease: "power2.in", transformOrigin: "50% 50%" }, p.at);
+        tl.to(p.fill, { opacity: 1, duration: 0.14, ease: "power2.out" }, p.at + 0.06);
+        tl.to("#tp-finger", { y: -430, duration: 0.28, ease: "power2.out" }, p.at + 0.1);
+        tl.to(p.btn, { scale: 1, duration: 0.46, ease: "elastic.out(1, 0.45)" }, p.at + 0.1);
+        tl.to(p.btn, { color: "#FFFFFF", borderColor: "rgba(16,20,24,0)", duration: 0.2, ease: "power2.out" }, p.at + 0.08);
+      }
+
+      /* ---- Scene 2 (4.0–7.5) : 손이 내려가고 문장이 앉는다 ---- */
+      tl.to("#tp-finger", { y: 60, opacity: 0, duration: 0.7, ease: "power2.in" }, 4.0);
+      tl.fromTo("#tp-line", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.75, ease: "power3.out" }, 4.6);
+      tl.to("#tp-stage", { opacity: 0, duration: 0.4, ease: "power2.in" }, 7.05);
+
+      /* ---- Scene 3 (7.5–10.0) : 잉크 면과 마크. 마지막 프레임이므로 여기서 안착한다 ---- */
+      tl.fromTo("#tp-ink", { y: 0 }, { y: -1080, duration: 0.85, ease: "power3.inOut" }, 7.05);
+      tl.fromTo("#tp-mark", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 7.9);
+      tl.fromTo("#tp-credit", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 8.4);
+
+      window.__timelines["10-three-presses"] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 삼성 "모드 및 루틴" 연동을 순서대로 안내하는 화면 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vk_background"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_m">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBack"
+                style="@style/VkButton.Outline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/back"
+                app:icon="@drawable/ic_back"
+                app:iconGravity="textStart" />
+
+            <TextView
+                style="@style/VkText.Title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_s"
+                android:layout_weight="1"
+                android:text="@string/routine_title"
+                android:textSize="@dimen/text_huge" />
+        </LinearLayout>
+
+        <!-- 사용 가능 여부 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_m"
+            android:background="@drawable/bg_card_soft"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                android:id="@+id/routineAvailability"
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 1단계 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_m"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1단계 · 바로가기 만들기" />
+
+            <TextView
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="아래 단추를 누르면 루틴에서 고를 수 있는 '1·2·3번 버튼' 바로가기가 만들어집니다." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMakeShortcuts"
+                style="@style/VkButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="바로가기 만들기"
+                app:icon="@drawable/ic_link"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- 2단계 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2단계 · 루틴에서 고르기" />
+
+            <TextView
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="설정 → 유용한 기능 → 모드 및 루틴 → 루틴 추가 → 실행할 동작에서 '앱 실행'을 고르고, 바이브키의 '1번 버튼' 바로가기를 선택하세요." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenRoutineApp"
+                style="@style/VkButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="모드 및 루틴 열기"
+                app:icon="@drawable/ic_routine"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+
+        <!-- 3단계 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3단계 · 잘 되는지 확인" />
+
+            <TextView
+                style="@style/VkText.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="루틴이 부르는 것과 똑같은 방법으로 지금 바로 시험해 볼 수 있습니다." />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTestRoutine1"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="1번 버튼 시험하기" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTestRoutine2"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="2번 버튼 시험하기" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTestRoutine3"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:text="3번 버튼 시험하기" />
+        </LinearLayout>
+
+        <!-- 고급 정보 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:background="@drawable/bg_card_soft"
+            android:orientation="vertical"
+            android:padding="@dimen/space_m">
+
+            <TextView
+                style="@style/VkText.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="자동화 앱(태스커 등)에서 쓸 정보" />
+
+            <TextView
+                android:id="@+id/routineDetail"
+                style="@style/VkText.Label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:fontFamily="monospace"
+                android:text=""
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCopyInfo"
+                style="@style/VkButton.Outline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="이 내용 복사하기" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/space_xl" />
+    </LinearLayout>
+</ScrollView>
