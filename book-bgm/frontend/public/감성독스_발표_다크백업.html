@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>감성독스 — 발표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg0:#070411; --bg1:#140a2e; --violet:#8b5cf6; --indigo:#6366f1;
+    --cyan:#22d3ee; --magenta:#ec4899; --amber:#fbbf24;
+    --text:#f5f3ff; --dim:#a99fd6;
+    --glass:rgba(255,255,255,0.05); --stroke:rgba(255,255,255,0.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans KR",system-ui,sans-serif;background:var(--bg0);color:var(--text);
+    overflow:hidden;
+  }
+  /* animated background */
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
+      radial-gradient(120% 90% at 50% 0%, var(--bg1) 0%, var(--bg0) 60%);}
+  .blob{position:absolute;border-radius:50%;filter:blur(120px);opacity:.4;}
+  .b1{width:620px;height:620px;background:var(--violet);left:18%;top:20%;animation:f1 18s ease-in-out infinite}
+  .b2{width:560px;height:560px;background:var(--cyan);left:70%;top:60%;animation:f2 22s ease-in-out infinite}
+  .b3{width:420px;height:420px;background:var(--magenta);left:55%;top:12%;animation:f1 26s ease-in-out infinite reverse}
+  @keyframes f1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-50px)}}
+  @keyframes f2{0%,100%{transform:translate(0,0)}50%{transform:translate(-70px,40px)}}
+
+  /* deck */
+  .deck{position:relative;z-index:1;height:100vh;width:100vw;display:flex;transition:transform .6s cubic-bezier(.7,0,.2,1)}
+  .slide{min-width:100vw;height:100vh;padding:6vh 7vw;display:flex;flex-direction:column;justify-content:center;position:relative}
+  .eyebrow{letter-spacing:.5em;font-size:1.1rem;font-weight:700;color:var(--cyan);margin-bottom:1.2rem}
+  h1{font-size:6.5rem;font-weight:900;line-height:1.02;
+     background:linear-gradient(110deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:3.6rem;font-weight:900;line-height:1.12;margin-bottom:2.5rem}
+  .grad{background:linear-gradient(110deg,var(--violet),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:1.8rem;color:var(--text);font-weight:500;margin-top:1.5rem}
+  .dim{color:var(--dim)}
+  .src{position:absolute;left:7vw;bottom:4vh;font-size:1rem;color:var(--dim)}
+
+  /* stat grid */
+  .stats{display:flex;gap:2rem;flex-wrap:wrap;margin-top:1rem}
+  .card{background:var(--glass);border:1px solid var(--stroke);border-radius:24px;
+        backdrop-filter:blur(14px);box-shadow:0 30px 80px -20px rgba(0,0,0,.6);padding:2.4rem 2.6rem}
+  .stat .big{font-size:4.6rem;font-weight:900;line-height:1;
+        background:linear-gradient(120deg,var(--cyan),#fff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .lbl{font-size:1.25rem;color:var(--dim);margin-top:.7rem;font-weight:500;max-width:280px}
+  .stat .delta{font-size:1.15rem;font-weight:700;color:var(--magenta);margin-top:.5rem}
+
+  .flow{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-top:1rem}
+  .node{background:var(--glass);border:1.5px solid rgba(139,92,246,.5);border-radius:20px;padding:1.5rem 1.6rem;text-align:center;min-width:190px}
+  .node .ic{font-size:2.4rem}
+  .node .t{font-weight:700;font-size:1.4rem;margin-top:.4rem}
+  .node .s{font-size:1rem;color:var(--dim);margin-top:.3rem}
+  .arrow{font-size:2.6rem;font-weight:900;color:var(--cyan)}
+  .stage-lbl{font-size:1.3rem;font-weight:700;letter-spacing:.1em;margin:1.5rem 0 .8rem}
+  ul.facts{list-style:none;margin-top:1.5rem}
+  ul.facts li{font-size:1.5rem;margin:1rem 0;padding-left:2.2rem;position:relative;color:var(--text)}
+  ul.facts li::before{content:"▸";position:absolute;left:0;color:var(--cyan);font-weight:900}
+  ul.facts b{color:var(--cyan)}
+  .quote{font-size:2.2rem;line-height:1.4;font-weight:500;max-width:1100px}
+  .quote .hl{color:var(--cyan);font-weight:700}
+
+  /* nav */
+  .nav{position:fixed;z-index:10;bottom:3vh;right:3vw;display:flex;gap:.6rem;align-items:center}
+  .nav button{background:var(--glass);border:1px solid var(--stroke);color:var(--text);
+        width:54px;height:54px;border-radius:50%;font-size:1.5rem;cursor:pointer;backdrop-filter:blur(10px)}
+  .nav button:hover{border-color:var(--cyan)}
+  .dots{position:fixed;z-index:10;bottom:3.4vh;left:50%;transform:translateX(-50%);display:flex;gap:.6rem}
+  .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer}
+  .dot.on{background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+  .pageno{position:fixed;z-index:10;top:3vh;right:3vw;font-size:1rem;color:var(--dim)}
+
+  /* DEMO */
+  .demo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1rem;height:62vh}
+  .panel{background:var(--glass);border:1px solid var(--stroke);border-radius:24px;backdrop-filter:blur(14px);padding:2rem;display:flex;flex-direction:column}
+  .drop{flex:1;border:2px dashed rgba(139,92,246,.5);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;cursor:pointer;transition:.2s;text-align:center;padding:1rem}
+  .drop:hover,.drop.hot{border-color:var(--cyan);background:rgba(34,211,238,.07)}
+  .drop .ic{font-size:3.6rem}
+  .drop .t{font-size:1.4rem;font-weight:700}
+  .drop .s{font-size:1rem;color:var(--dim)}
+  canvas#thumb{border-radius:10px;max-height:160px;margin-top:1rem;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .keyrow{display:flex;gap:.6rem;margin-bottom:1rem;align-items:center}
+  .keyrow input,.keyrow select{background:rgba(0,0,0,.3);border:1px solid var(--stroke);color:var(--text);
+        border-radius:10px;padding:.7rem .9rem;font-size:1rem;font-family:inherit}
+  .keyrow input{flex:1}
+  .btn{background:linear-gradient(120deg,var(--violet),var(--cyan));color:#0b0617;border:none;
+        font-weight:900;font-size:1.2rem;padding:1rem 1.4rem;border-radius:14px;cursor:pointer;font-family:inherit}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.play{background:linear-gradient(120deg,var(--cyan),var(--amber));margin-top:1rem}
+  .result{font-size:1.1rem;line-height:1.7;overflow:auto}
+  .result .row{display:flex;gap:.8rem;margin:.5rem 0;align-items:baseline}
+  .result .k{color:var(--cyan);font-weight:700;width:120px;text-transform:uppercase;font-size:.95rem;flex-shrink:0}
+  .result .v{font-weight:700;font-size:1.3rem}
+  .promptbox{margin-top:1rem;padding:1rem;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--stroke);font-size:1.15rem;color:var(--text)}
+  .status{font-size:1.05rem;color:var(--dim);min-height:1.4rem;margin-top:.6rem}
+  .status.err{color:var(--magenta)}
+  .meterbar{height:14px;border-radius:8px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:.3rem}
+  .meterbar>div{height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+  .eqwrap{display:flex;gap:4px;align-items:flex-end;height:70px;margin-top:1rem;justify-content:center}
+  .eqwrap .bar{width:8px;background:linear-gradient(180deg,var(--cyan),var(--violet));border-radius:4px;height:8px}
+  .spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--cyan);border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .tag{display:inline-block;font-size:1rem;font-weight:700;color:var(--text);padding:.4rem .9rem;border-radius:999px;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.5);margin:.2rem}
+  /* bgm map */
+  .bgmmap{display:flex;border-radius:16px;overflow:hidden;margin-top:1.6rem;height:130px;border:1px solid var(--stroke);box-shadow:0 20px 60px -20px rgba(0,0,0,.6)}
+  .seg{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0b0617;gap:.25rem}
+  .seg .m{font-size:1.4rem;font-weight:900}.seg .p{font-size:1rem;font-weight:700;opacity:.85}.seg .bpm{font-size:.95rem;font-weight:900;opacity:.7}
+  /* comparison */
+  .cmp{width:100%;border-collapse:collapse;margin-top:1.2rem;font-size:1.25rem}
+  .cmp th,.cmp td{padding:.9rem .8rem;text-align:center;border-bottom:1px solid var(--stroke)}
+  .cmp th{font-size:1.15rem;color:var(--dim);font-weight:700}
+  .cmp td:first-child,.cmp th:first-child{text-align:left;font-weight:700}
+  .cmp .me{background:rgba(34,211,238,.09)}
+  .cmp thead th.me{color:var(--cyan);font-size:1.5rem}
+  .cmp .yes{color:var(--cyan);font-weight:900;font-size:1.65rem}
+  .cmp .ok{color:#c9c2e6;font-weight:900;font-size:1.5rem}
+  .cmp .no{color:#6b6486;font-weight:900;font-size:1.45rem}
+  .cmp .mid{color:var(--amber);font-weight:900;font-size:1.55rem}
+  /* mood preview buttons */
+  .moodbtns{display:flex;gap:1.1rem;margin-top:2rem;flex-wrap:wrap}
+  .moodbtn{background:var(--glass);border:1.5px solid var(--c);color:var(--text);border-radius:18px;
+    padding:1.4rem 1.6rem;font-size:1.55rem;font-weight:900;font-family:inherit;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:.35rem;box-shadow:0 0 34px -10px var(--c);min-width:168px}
+  .moodbtn span{font-size:1rem;font-weight:500;color:var(--dim)}
+  .moodbtn:hover{background:rgba(255,255,255,.08);transform:translateY(-3px)}
+  /* music logic slide */
+  .lmap{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.4rem}
+  .lmap>div{background:var(--glass);border:1px solid var(--stroke);border-radius:14px;padding:.9rem 1.3rem;font-size:1.25rem}
+  .logic-tbl{font-size:1.15rem;margin-top:1.2rem}
+  .logic-tbl th,.logic-tbl td{padding:.5rem .7rem;text-align:left}
+  .logic-tbl td:first-child{color:var(--cyan);font-weight:900}
+  .logic-tbl th{font-size:1rem}
+  .pagerow{margin-top:1rem;display:flex;align-items:center;gap:.6rem;font-size:1.05rem;flex-wrap:wrap}
+  .pagerow button{background:var(--glass);border:1px solid var(--stroke);color:var(--text);border-radius:8px;width:36px;height:36px;font-size:1.05rem;cursor:pointer}
+  .pagerow button:hover{border-color:var(--cyan)}
+  .bookidrow{display:flex;gap:.7rem;margin-bottom:1rem;align-items:center}
+  .bookidrow input{flex:1;background:rgba(0,0,0,.3);border:1px solid var(--stroke);color:var(--text);border-radius:10px;padding:.7rem .9rem;font-size:1rem;font-family:inherit}
+  .bookidrow .lbl{color:var(--dim);font-size:.95rem;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide">
+    <div class="eyebrow">◈ AI BOOK SOUNDTRACK</div>
+    <h1>감성독스</h1>
+    <div class="sub">읽는 순간, 분위기를 읽어 음악을 입히다</div>
+    <div class="sub dim" style="font-size:1.4rem;margin-top:2.5rem">
+      PDF를 첨부하면 Gemini가 무드를 분석하고, 그에 맞는 배경음악이 흐릅니다.
+      <br/>→ <b style="color:var(--cyan)">바로 다음 슬라이드</b>에서 실제로 동작하는 라이브 데모를 보여드립니다.
+    </div>
+  </section>
+
+  <!-- LIVE DEMO -->
+  <section class="slide">
+    <div class="eyebrow" style="color:var(--magenta)">● LIVE DEMO · 실제 백엔드 + Lyria</div>
+    <h2 style="margin-bottom:1rem">책 PDF → <span class="grad">Gemini 분석</span> → <span class="grad">Lyria</span> 음악 스트리밍 🔊</h2>
+    <div class="bookidrow">
+      <span class="lbl">빠른 재생용 book_id(선택):</span>
+      <input id="bookid" type="text" placeholder="이미 업로드한 book_id가 있으면 입력 후 Enter · 없으면 아래에서 PDF 업로드" />
+    </div>
+    <div class="demo-wrap">
+      <div class="panel">
+        <div class="drop" id="drop">
+          <div class="ic">📚</div>
+          <div class="t">책 PDF를 끌어다 놓거나 클릭</div>
+          <div class="s">실제 백엔드(/upload)로 올라가 Gemini가 분석하고 Lyria가 음악을 만듭니다</div>
+        </div>
+        <canvas id="thumb"></canvas>
+        <input id="file" type="file" accept="application/pdf" hidden />
+        <button class="btn" id="analyze" disabled style="margin-top:1rem">✦ 분석 & 음악 생성 (Lyria)</button>
+        <div class="status" id="status"></div>
+      </div>
+      <div class="panel">
+        <div class="result" id="result">
+          <div class="dim" style="font-size:1.2rem">분석된 무드와 Lyria 음악이 여기에 표시됩니다.</div>
+        </div>
+        <div class="eqwrap" id="eq" style="display:none"></div>
+        <button class="btn play" id="play" disabled>▶ 음악 재생 (Lyria)</button>
+      </div>
+    </div>
+    <div class="src">※ 라이브 데모는 백엔드(:8000)+프론트(:5173) 실행 후 <b>http://localhost:5173/감성독스_발표.html</b> 에서 동작합니다. 슬라이드만 볼 땐 파일을 그냥 열어도 됩니다.</div>
+  </section>
+
+  <!-- 2 PROBLEM -->
+  <section class="slide">
+    <div class="eyebrow">THE PROBLEM</div>
+    <h2>갈수록, <span class="grad">책을 펴지 않습니다</span></h2>
+    <div class="stats">
+      <div class="card stat"><div class="big">43.0%</div><div class="lbl">성인 종합 독서율 (2023)</div><div class="delta">▼ 2021년 47.5% → 역대 최저</div></div>
+      <div class="card stat"><div class="big">3.9권</div><div class="lbl">성인 연간 독서량 (2023)</div><div class="delta">▼ 2021년 4.5권에서 감소</div></div>
+      <div class="card stat"><div class="big">10명 중 6명</div><div class="lbl">1년에 책을 한 권도 읽지 않는 성인 비율</div><div class="delta">종이책 독서율 32.3%</div></div>
+    </div>
+    <div class="sub" style="margin-top:2.2rem">원인 ① <b class="grad">시간 부족</b> &nbsp;·&nbsp; 원인 ② <b class="grad">빠른 도파민 콘텐츠(쇼츠·게임·웹툰)와의 경쟁</b></div>
+    <div class="src">출처: 문화체육관광부 「국민 독서실태조사」 (2023)</div>
+  </section>
+
+  <!-- 3 EVIDENCE -->
+  <section class="slide">
+    <div class="eyebrow">THE SCIENCE · PLOS ONE</div>
+    <h2><span class="grad">맥락에 맞는 음악</span>은, 몰입을 바꿉니다</h2>
+    <div class="quote">
+      단순한 배경음악은 같은 문장을 다시 읽게 만드는 <span style="color:var(--magenta);font-weight:700">방해 요인</span>이 되지만,<br/>
+      맥락에 일치하는 음악은 독자의 <span class="hl">몰입도 향상</span>과 <span class="hl">감정이입</span>을 유도한다.
+    </div>
+    <div class="card" style="margin-top:3rem;font-size:1.3rem;color:var(--dim)">
+      📄 <i>“Emotionally congruent music and text increase immersion and appraisal”</i> — PLOS ONE
+    </div>
+    <div class="sub" style="margin-top:2rem">→ 감성독스는 이 <b class="grad">‘맥락 일치 음악’</b>을 실시간·자동으로 구현합니다.</div>
+  </section>
+
+  <!-- 4 SOLUTION -->
+  <section class="slide">
+    <div class="eyebrow">THE SOLUTION</div>
+    <h2>책의 무드 <span class="grad">0.9</span> + 지금의 환경 <span class="grad">0.1</span></h2>
+    <ul class="facts">
+      <li>책의 감정선을 <b>0.9</b> 비중으로 음악에 반영 — 작품의 분위기가 중심</li>
+      <li>독자의 <b>위치·날씨·시간·계절</b>을 <b>0.1</b>만 섞어 '지금 여기'의 감각을 더함</li>
+      <li>환경 데이터는 <b>무료 API(OSM Nominatim · Open-Meteo)</b> — 추가 AI 호출 <b>0회</b></li>
+      <li>GPS를 거부해도 정상 동작 (graceful fallback)</li>
+      <li>종이책은 <b>카메라로 비추면</b> 현재 챕터를 인식 — 디지털 전환 없이</li>
+    </ul>
+  </section>
+
+  <!-- 5 TECH -->
+  <section class="slide">
+    <div class="eyebrow">HOW IT WORKS · 감성독스 ENGINE</div>
+    <h2><span class="grad">사전 분석</span> × <span class="grad">실시간 구동</span></h2>
+    <div class="stage-lbl" style="color:var(--violet)">STAGE 1 — 사전 분석 <span class="dim" style="font-weight:500">· 1~2분 · 페이지당 단일 호출</span></div>
+    <div class="flow">
+      <div class="node"><div class="ic">📷</div><div class="t">광학 인식</div><div class="s">PDF · 카메라</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">✦</div><div class="t">Gemini 3.1 Flash-Lite</div><div class="s">경량 비전 LLM</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🗺️</div><div class="t">BGM Map</div><div class="s">페이지별 무드 JSON</div></div>
+    </div>
+    <div class="stage-lbl" style="color:var(--cyan)">STAGE 2 — 실시간 구동 <span class="dim" style="font-weight:500">· 읽는 즉시 반응</span></div>
+    <div class="flow">
+      <div class="node"><div class="ic">🔖</div><div class="t">챕터 인식</div><div class="s">흐림·오인식 보정</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🎵</div><div class="t">Lyria RealTime</div><div class="s">48kHz PCM 스트림</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🔊</div><div class="t">크로스페이드</div><div class="s">무드 거리 임계값</div></div>
+    </div>
+    <div class="src">분석 스키마: { instruments, genre, bpm(40–160), mood, intensity(0–1), prompt } · 모델: gemini-3.1-flash-lite</div>
+  </section>
+
+  <!-- PAPER BOOK -->
+  <section class="slide">
+    <div class="eyebrow">📖 PAPER BOOK</div>
+    <h2>종이책도, <span class="grad">카메라로 비추면 끝</span></h2>
+    <div class="flow" style="margin:1.6rem 0">
+      <div class="node"><div class="ic">📷</div><div class="t">페이지 비추기</div><div class="s">스마트폰 카메라</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🔖</div><div class="t">챕터 자동 인식</div><div class="s">흐림·오인식 보정</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🎵</div><div class="t">무드 음악 재생</div><div class="s">넘기면 자동 전환</div></div>
+    </div>
+    <ul class="facts">
+      <li>펼친 페이지를 비추면 <b>현재 챕터를 자동 인식</b> — 전자책 재구매·디지털 전환 없이</li>
+      <li><b>흐림·조명 보정</b>(광학 전처리)으로 손떨림·역광에도 안정적으로 인식</li>
+      <li><b>히스테리시스 상태머신</b>으로 오인식 시에도 음악이 튀지 않게 안정화</li>
+      <li>인식된 챕터의 무드로 배경음악이 흐르고, 페이지를 넘기면 자연스럽게 전환</li>
+    </ul>
+  </section>
+
+  <!-- BGM MAP -->
+  <section class="slide">
+    <div class="eyebrow">BGM MAP</div>
+    <h2>한 권 안에서도, <span class="grad">무드는 계속 바뀝니다</span></h2>
+    <div class="dim" style="font-size:1.4rem">사전 분석이 만든 페이지별 무드 지도 — 읽는 위치에 따라 음악이 자동 전환됩니다.</div>
+    <div class="bgmmap">
+      <div class="seg" style="flex:8;background:linear-gradient(135deg,#22d3ee,#67e8f9)"><div class="m">calm</div><div class="p">p.1–8</div><div class="bpm">60 BPM</div></div>
+      <div class="seg" style="flex:7;background:linear-gradient(135deg,#8b5cf6,#a78bfa)"><div class="m">mysterious</div><div class="p">p.9–15</div><div class="bpm">78 BPM</div></div>
+      <div class="seg" style="flex:7;background:linear-gradient(135deg,#ec4899,#f472b6)"><div class="m">tense</div><div class="p">p.16–22</div><div class="bpm">104 BPM</div></div>
+      <div class="seg" style="flex:8;background:linear-gradient(135deg,#6366f1,#818cf8)"><div class="m">melancholic</div><div class="p">p.23–30</div><div class="bpm">66 BPM</div></div>
+      <div class="seg" style="flex:10;background:linear-gradient(135deg,#fbbf24,#fcd34d)"><div class="m">hopeful</div><div class="p">p.31–40</div><div class="bpm">120 BPM</div></div>
+    </div>
+    <ul class="facts" style="margin-top:1.8rem">
+      <li>무드가 바뀌는 경계에서만 음악을 교체 — <b>무드 거리 임계값</b> 기반 크로스페이드</li>
+      <li>각 구간은 <b>instruments · genre · bpm · intensity · prompt</b> JSON으로 저장 (재사용·캐시)</li>
+    </ul>
+  </section>
+
+  <!-- MUSIC LOGIC -->
+  <section class="slide">
+    <div class="eyebrow">🎚️ MUSIC LOGIC</div>
+    <h2>무드가 <span class="grad">음악이 되는 파이프라인</span></h2>
+    <div class="flow" style="margin:1.5rem 0">
+      <div class="node"><div class="ic">📖</div><div class="t">Gemini 무드</div><div class="s">prompt·bpm·mood JSON</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🗂️</div><div class="t">버킷팅</div><div class="s">최대 12 세그먼트</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">🎵</div><div class="t">Lyria RealTime</div><div class="s">세그먼트당 20초 PCM</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="ic">💾</div><div class="t">캐시 & 스트림</div><div class="s">재생 토큰 0</div></div>
+    </div>
+    <ul class="facts">
+      <li>비슷한 무드는 <b>(mood · genre · bpm/20)</b> 버킷으로 묶어 Lyria 호출을 최대 <b>12회</b>로 절약</li>
+      <li>각 세그먼트 = <b>Lyria RealTime 20초 PCM</b>(48kHz 스테레오) → 디스크 캐시 → <b>재생 시 추가 비용 0</b></li>
+      <li>가중 프롬프트 <b>책 0.9 : 환경 0.1</b> — 책 분위기 중심에 위치·날씨를 10% 가미</li>
+      <li>재생은 <b>WebSocket PCM 스트리밍</b>, 페이지를 넘기면 <b>무드 거리</b>로 세그먼트를 바꿔 자연 전환(루프)</li>
+    </ul>
+    <div class="src">왼쪽 2번 라이브 데모에서 이 파이프라인이 실제로 동작합니다 (백엔드 실행 시).</div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section class="slide">
+    <div class="eyebrow">WHY 감성독스</div>
+    <h2>단순 배경음악과 <span class="grad">무엇이 다른가</span></h2>
+    <table class="cmp">
+      <thead><tr><th>기능</th><th class="me">감성독스</th><th>밀리의 서재<br><span style="font-size:.85rem">(전자책)</span></th><th>오디오북</th><th>일반 음악앱<br><span style="font-size:.85rem">(집중·스터디)</span></th></tr></thead>
+      <tbody>
+        <tr><td>책 내용 기반 자동 무드 분석</td><td class="me yes">✓</td><td class="no">✕</td><td class="mid">△</td><td class="no">✕</td></tr>
+        <tr><td>페이지별 실시간 음악 전환</td><td class="me yes">✓</td><td class="no">✕</td><td class="no">✕</td><td class="no">✕</td></tr>
+        <tr><td>종이책 그대로 사용</td><td class="me yes">✓</td><td class="no">✕</td><td class="no">✕</td><td class="no">✕</td></tr>
+        <tr><td>위치·날씨·시간 반영</td><td class="me yes">✓</td><td class="no">✕</td><td class="no">✕</td><td class="no">✕</td></tr>
+        <tr><td>능동적 ‘읽기’ 몰입</td><td class="me yes">✓</td><td class="ok">✓</td><td class="no">✕</td><td class="no">✕</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- IMPACT -->
+  <section class="slide">
+    <div class="eyebrow">SOCIAL IMPACT</div>
+    <h2>잃어버린 독서의 즐거움을, <span class="grad">감성으로</span></h2>
+    <ul class="facts">
+      <li><b>진입장벽↓</b> — 텍스트가 못 주던 즉각적 몰입 보상을 더해 쇼츠 세대도 책에 빠져들게</li>
+      <li><b>아날로그 회복</b> — 콘텐츠를 화면으로 옮기지 않고 종이책을 그대로 살림</li>
+      <li><b>깊은 집중의 회복</b> — 짧은 영상과 끝없는 알림에 길든 일상에, 책 한 권에 오롯이 머무는 <b class="grad">‘딥리딩’의 시간</b>을 되돌려줍니다</li>
+      <li><b>선순환</b> — 한 번의 몰입 경험 → 다음 책 → 문해력·정서적 안정</li>
+    </ul>
+    <div class="sub" style="margin-top:2.5rem">책장을 넘기면, 사운드트랙이 시작됩니다. — <b class="grad">감성독스</b></div>
+  </section>
+
+</div>
+
+<div class="pageno"><span id="cur">1</span> / <span id="total">7</span></div>
+<div class="dots" id="dots"></div>
+<div class="nav">
+  <button id="prev">‹</button>
+  <button id="next">›</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+/* ---------- deck navigation ---------- */
+const deck=document.getElementById('deck');
+const slides=document.querySelectorAll('.slide');
+const N=slides.length;
+document.getElementById('total').textContent=N;
+let idx=0;
+const dots=document.getElementById('dots');
+slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i?'':' on');d.onclick=()=>go(i);dots.appendChild(d);});
+function go(i){
+  const target=Math.max(0,Math.min(N-1,i));
+  if(target<idx){try{stopMusic();}catch(e){}}   // going back stops the music
+  idx=target;deck.style.transform=`translateX(-${idx*100}vw)`;
+  document.getElementById('cur').textContent=idx+1;
+  [...dots.children].forEach((d,j)=>d.classList.toggle('on',j===idx));}
+document.getElementById('next').onclick=()=>go(idx+1);
+document.getElementById('prev').onclick=()=>go(idx-1);
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(idx+1);
+  if(e.key==='ArrowLeft'||e.key==='PageUp')go(idx-1);
+});
+
+/* ---------- client id (same anon identity the real app uses) ---------- */
+const CID = localStorage.getItem('cid') || ('demo-'+Math.random().toString(36).slice(2,10));
+localStorage.setItem('cid', CID);
+
+/* ---------- PDF attach ---------- */
+if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+const drop=document.getElementById('drop'),fileEl=document.getElementById('file'),
+      runBtn=document.getElementById('analyze'),statusEl=document.getElementById('status'),
+      thumb=document.getElementById('thumb'),resultEl=document.getElementById('result'),
+      playBtn=document.getElementById('play'),bookInput=document.getElementById('bookid');
+let pdfFile=null;
+
+drop.onclick=()=>fileEl.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('hot')};
+drop.ondragleave=()=>drop.classList.remove('hot');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hot');if(e.dataTransfer.files[0])loadPdf(e.dataTransfer.files[0]);};
+fileEl.onchange=()=>{if(fileEl.files[0])loadPdf(fileEl.files[0]);};
+
+async function loadPdf(file){
+  if(file.type!=='application/pdf'){setStatus('PDF 파일만 가능합니다.',true);return;}
+  pdfFile=file;bookId=null;
+  drop.querySelector('.t').textContent='📎 '+file.name;
+  drop.querySelector('.s').textContent=(file.size/1048576).toFixed(1)+' MB · 첨부 완료';
+  runBtn.disabled=false;setStatus('첨부 완료 — [분석 & 음악 생성]을 누르세요.');
+  try{
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;const page=await pdf.getPage(1);
+    const vp=page.getViewport({scale:0.5});thumb.width=vp.width;thumb.height=vp.height;
+    await page.render({canvasContext:thumb.getContext('2d'),viewport:vp}).promise;thumb.style.display='block';
+  }catch(_){}
+}
+function setStatus(t,err){statusEl.innerHTML=t;statusEl.classList.toggle('err',!!err);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function ni(v){v=Number(v);if(!isFinite(v))return 0.3;if(v<=1)return Math.max(0,v);if(v<=10)return v/10;return Math.min(1,v/100);}
+
+/* ---------- the REAL pipeline: /upload -> Lyria segments -> /ws/music PCM ---------- */
+let bookId=null,pageCount=1,demoMoods=[],curPage=0;
+let ws=null,actx=null,analyser=null,gain=null,nextStart=0,vizRAF=null,chunkN=0,retryTimer=null;
+const WS_SR=48000,WS_CH=2;
+const eqEls=[...document.querySelectorAll('.eqwrap')];
+eqEls.forEach(el=>{for(let i=0;i<24;i++){const b=document.createElement('div');b.className='bar';el.appendChild(b);}});
+
+runBtn.onclick=runDemo;
+if(bookInput){bookInput.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=bookInput.value.trim();if(v){bookId=v;runBtn.disabled=false;runDemo();}}});}
+
+async function runDemo(){
+  const typed=bookInput&&bookInput.value.trim();
+  if(typed)bookId=typed;
+  if(!bookId&&!pdfFile){setStatus('PDF를 첨부하거나 book_id를 입력하세요.',true);return;}
+  runBtn.disabled=true;
+  if(!bookId){
+    setStatus('업로드 중… 책을 백엔드로 전송합니다 <span class="spin"></span>');
+    try{
+      const fd=new FormData();fd.append('file',pdfFile);fd.append('consent_accepted','true');
+      const r=await fetch('/upload',{method:'POST',headers:{'X-Client-Id':CID},body:fd});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(j.detail||('HTTP '+r.status));
+      bookId=j.book_id;pageCount=j.page_count||1;
+      setStatus(j.cached?'이미 분석된 책 — 음악 준비됨':'업로드 완료 · Gemini 무드 분석 끝 · Lyria 음악 생성 시작');
+    }catch(e){setStatus('업로드 실패: '+esc(e.message)+' — 백엔드(8000) 실행 & http://localhost:5173/ 에서 열었는지 확인',true);runBtn.disabled=false;return;}
+  }
+  await loadMoods();
+  connectMusic();
+}
+
+async function loadMoods(){
+  try{const r=await fetch('/books/'+bookId+'/moods');const j=await r.json();demoMoods=j.moods||[];if(demoMoods.length>pageCount)pageCount=demoMoods.length;curPage=0;renderMoods();}catch(_){}
+}
+function renderMoods(){
+  const m=demoMoods[curPage]||{};const inten=Math.round(ni(m.intensity)*100);const total=demoMoods.length||pageCount;
+  resultEl.innerHTML=
+    '<div class="row"><span class="k">book_id</span><span class="v" style="font-size:1rem">'+esc(bookId)+'</span></div>'+
+    '<div class="row"><span class="k">Mood</span><span class="v grad">'+esc(m.mood||'-')+'</span></div>'+
+    '<div class="row"><span class="k">Genre</span><span class="v">'+esc(m.genre||'-')+'</span></div>'+
+    '<div class="row"><span class="k">BPM</span><span class="v">'+esc(String(m.bpm||'-'))+'</span></div>'+
+    '<div class="row"><span class="k">악기</span><span class="v" style="font-size:1.02rem">'+((m.instruments||[]).map(i=>'<span class="tag">'+esc(i)+'</span>').join(''))+'</span></div>'+
+    '<div class="promptbox">🎼 '+esc(m.prompt||'')+'</div>'+
+    '<div class="pagerow">페이지 <button id="pgPrev">◀</button> <b>'+(curPage+1)+' / '+total+'</b> <button id="pgNext">▶</button> <span class="dim">넘기면 무드·음악 전환</span></div>';
+  const pp=document.getElementById('pgPrev'),pn=document.getElementById('pgNext');
+  if(pp)pp.onclick=()=>changePage(-1);
+  if(pn)pn.onclick=()=>changePage(1);
+}
+function changePage(d){
+  const max=(demoMoods.length||pageCount)-1;
+  curPage=Math.max(0,Math.min(max,curPage+d));renderMoods();
+  if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'page',page:curPage}));
+}
+
+function connectMusic(){
+  stopMusic(true);
+  try{actx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:WS_SR});}
+  catch(_){actx=new (window.AudioContext||window.webkitAudioContext)();}
+  analyser=actx.createAnalyser();analyser.fftSize=256;analyser.smoothingTimeConstant=0.75;
+  gain=actx.createGain();gain.gain.value=0.9;analyser.connect(gain);gain.connect(actx.destination);
+  nextStart=actx.currentTime+0.12;chunkN=0;
+  const scheme=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(scheme+'://'+location.host+'/ws/music/'+bookId+'?cid='+encodeURIComponent(CID));
+  ws.binaryType='arraybuffer';
+  ws.onopen=()=>{ws.send(JSON.stringify({type:'page',page:curPage}));setStatus('Lyria 스트림 연결됨…');startViz();playBtn.disabled=false;playBtn.textContent='■ 정지';};
+  ws.onmessage=(e)=>{
+    if(typeof e.data==='string'){try{const msg=JSON.parse(e.data);if(msg.type==='error'){setStatus('🎼 Lyria가 음악을 생성 중… (최초 1~2분) 자동 재시도 <span class="spin"></span>');scheduleRetry();}}catch(_){}return;}
+    onPCM(e.data);
+  };
+  ws.onerror=()=>setStatus('WebSocket 오류 — 백엔드(8000)·프론트(5173) 실행 및 5173에서 열었는지 확인',true);
+  ws.onclose=()=>{};
+}
+function scheduleRetry(){clearTimeout(retryTimer);retryTimer=setTimeout(()=>{if(bookId)connectMusic();},6000);}
+function onPCM(buf){
+  if(chunkN===0)setStatus('▶ 재생 중 — 실제 Lyria가 생성한 음악');
+  chunkN++;
+  const pcm=new Int16Array(buf),frames=Math.floor(pcm.length/WS_CH);if(!frames)return;
+  const ab=actx.createBuffer(WS_CH,frames,WS_SR);
+  for(let ch=0;ch<WS_CH;ch++){const c=ab.getChannelData(ch);for(let i=0;i<frames;i++)c[i]=pcm[i*WS_CH+ch]/32768;}
+  const s=actx.createBufferSource();s.buffer=ab;s.connect(analyser);
+  const at=Math.max(actx.currentTime,nextStart);s.start(at);nextStart=at+ab.duration;
+}
+function startViz(){eqEls.forEach(el=>el.style.display='flex');
+  const tick=()=>{if(!analyser)return;const d=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(d);
+    eqEls.forEach(el=>[...el.children].forEach((b,k)=>{const v=d[(k*3)%d.length]||0;b.style.height=(6+v/255*60)+'px';}));
+    vizRAF=requestAnimationFrame(tick);};vizRAF=requestAnimationFrame(tick);}
+function stopMusic(silent){
+  clearTimeout(retryTimer);retryTimer=null;
+  if(vizRAF)cancelAnimationFrame(vizRAF);vizRAF=null;
+  try{ws&&ws.close();}catch(_){}ws=null;
+  try{actx&&actx.close();}catch(_){}actx=null;analyser=null;gain=null;nextStart=0;chunkN=0;
+  if(!silent){if(playBtn)playBtn.textContent='▶ 음악 재생 (Lyria)';eqEls.forEach(el=>el.style.display='none');}
+}
+playBtn.onclick=()=>{ if(ws){stopMusic();} else if(bookId){connectMusic();} };
+</script>
+</body>
+</html>

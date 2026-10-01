@@ -64,12 +64,15 @@ export function AuthButton({ user, onChange }: Props) {
         ux_mode: "popup",
       });
 
+      // Icon-only round Google button — keeps the floating auth control
+      // narrow enough to not collide with the reader/library header brand
+      // on mobile. The G logo alone is universally recognized so we don't
+      // need the "Google 계정으로 로그인" label.
       w.google.accounts.id.renderButton(target, {
+        type: "icon",
         theme: "filled_black",
         size: "medium",
-        shape: "pill",
-        text: "signin_with",
-        logo_alignment: "left",
+        shape: "circle",
       });
     })();
 

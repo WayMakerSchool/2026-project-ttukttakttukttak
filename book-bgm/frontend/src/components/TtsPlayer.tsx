@@ -4,11 +4,12 @@ interface Props {
   bookId: string;
   page: number;
   enabled: boolean;
+  volume?: number;
 }
 
 /** Headless component: when `enabled` is true, fetches Gemini-generated TTS
  *  for the current page and plays it. Auto-stops + re-fetches on page change. */
-export function TtsPlayer({ bookId, page, enabled }: Props) {
+export function TtsPlayer({ bookId, page, enabled, volume = 0.95 }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "playing" | "error">(
     "idle"
@@ -30,7 +31,7 @@ export function TtsPlayer({ bookId, page, enabled }: Props) {
     setErrMsg(null);
 
     const audio = new Audio(`/books/${bookId}/pages/${page}/tts`);
-    audio.volume = 0.95;
+    audio.volume = volume;
     audio.preload = "auto";
     audio.onplaying = () => {
       if (!cancelled) setStatus("playing");
@@ -60,6 +61,13 @@ export function TtsPlayer({ bookId, page, enabled }: Props) {
       audioRef.current = null;
     };
   }, [bookId, page, enabled]);
+
+  // Live-update volume on slider drag without re-fetching the audio.
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
 
   if (!enabled) return null;
   if (status === "loading") {

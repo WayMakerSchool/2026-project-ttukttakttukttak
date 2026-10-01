@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { authHeaders, type AuthUser } from "../lib/auth";
+import { authQuery } from "../lib/client-id";
 
 export interface BookDetailData {
   id: string;
@@ -185,7 +186,7 @@ export function BookDetail({ bookId, user, onBack, onRead, onDeleted }: Props) {
             <div className="detail-head">
               <div className="detail-cover">
                 <img
-                  src={`/books/${book.id}/thumb`}
+                  src={`/books/${book.id}/thumb${authQuery(user?.idToken)}`}
                   alt=""
                   loading="lazy"
                   onError={(e) => {

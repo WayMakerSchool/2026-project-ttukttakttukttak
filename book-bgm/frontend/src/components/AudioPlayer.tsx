@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { loadUser } from "../lib/auth";
+import { getClientId } from "../lib/client-id";
 
 // Lyria RealTime outputs 48 kHz, stereo, signed 16-bit little-endian PCM.
 const SAMPLE_RATE = 48000;
@@ -27,6 +29,7 @@ interface Props {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
+  volume?: number;
 }
 
 export function AudioPlayer({
@@ -40,15 +43,18 @@ export function AudioPlayer({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  volume = 0.8,
 }: Props) {
   const wsRef = useRef<WebSocket | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
   const nextStartRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const firstChunkRef = useRef(false);
   const chunkCountRef = useRef(0);
+  const prevPageRef = useRef(page);
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +81,7 @@ export function AudioPlayer({
     ctxRef.current?.close().catch(() => {});
     ctxRef.current = null;
     analyserRef.current = null;
+    gainRef.current = null;
     nextStartRef.current = 0;
     firstChunkRef.current = false;
     chunkCountRef.current = 0;
@@ -122,14 +129,27 @@ export function AudioPlayer({
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.75;
-    analyser.connect(ctx.destination);
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    analyser.connect(gain);
+    gain.connect(ctx.destination);
 
     ctxRef.current = ctx;
     analyserRef.current = analyser;
+    gainRef.current = gain;
     nextStartRef.current = ctx.currentTime + 0.1;
 
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${scheme}://${location.host}/ws/music/${bookId}`);
+    // Browsers can't set headers on the WebSocket handshake, so identity
+    // travels via query params. Backend rejects with close code 4403 if the
+    // requester isn't allowed to access this book.
+    const params = new URLSearchParams();
+    const u = loadUser();
+    if (u?.idToken) params.set("token", u.idToken);
+    params.set("cid", getClientId());
+    const ws = new WebSocket(
+      `${scheme}://${location.host}/ws/music/${bookId}?${params.toString()}`
+    );
     ws.binaryType = "arraybuffer";
 
     ws.onopen = () => {
@@ -208,13 +228,31 @@ export function AudioPlayer({
   }
 
   useEffect(() => {
+    const prev = prevPageRef.current;
+    prevPageRef.current = page;
     const ws = wsRef.current;
+    // If the reader went backward, stop the music entirely.
+    if (page < prev && (status === "playing" || status === "generating" || status === "connecting")) {
+      teardown();
+      return;
+    }
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "page", page: page - 1 }));
     }
   }, [page]);
 
   useEffect(() => () => teardown(), []);
+
+  // Live volume update — affects the running stream without restart.
+  useEffect(() => {
+    if (gainRef.current) {
+      try {
+        gainRef.current.gain.value = volume;
+      } catch {
+        /* node disposed */
+      }
+    }
+  }, [volume]);
 
   const canPrev = page > 1;
   const canNext = page < pageCount;

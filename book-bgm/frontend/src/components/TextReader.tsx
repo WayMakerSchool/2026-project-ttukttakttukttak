@@ -21,6 +21,17 @@ interface SelectionState {
   y: number;
 }
 
+interface DictEntry {
+  word: string;
+  pos?: string;
+  definition?: string;
+  hanja?: string;
+  pronunciation?: string;
+  translations?: { en?: string; ja?: string };
+  example?: string;
+  note?: string;
+}
+
 export function TextReader({
   bookId,
   page,
@@ -38,6 +49,41 @@ export function TextReader({
   const prevPageRef = useRef(page);
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [lookupResult, setLookupResult] = useState<DictEntry | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+
+  async function lookupSelection() {
+    if (!selection) return;
+    setLookingUp(true);
+    setLookupResult(null);
+    setLookupError(null);
+    // Find ±1 sentence around the selection for context disambiguation.
+    const ctx = pages?.[selection.page - 1]?.slice(0, 400) || "";
+    try {
+      const res = await fetch("/dict/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ word: selection.text, context: ctx }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const data = (await res.json()) as DictEntry;
+      setLookupResult(data);
+    } catch (e) {
+      setLookupError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
+  // Hide lookup when user clicks outside / selection changes.
+  useEffect(() => {
+    if (!selection) {
+      setLookupResult(null);
+      setLookupError(null);
+      setLookingUp(false);
+    }
+  }, [selection]);
 
   // Watch for text selection inside this reader and surface a "highlight" button.
   useEffect(() => {
@@ -201,27 +247,109 @@ export function TextReader({
 
   return (
     <>
-      {selection && (
-        <button
-          type="button"
-          className="highlight-floating"
+      {selection && !lookupResult && !lookingUp && (
+        <div
+          className="selection-actions"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={saveHighlight}
-          disabled={saving}
           style={{
             position: "fixed",
-            left: `${Math.max(60, Math.min(window.innerWidth - 60, selection.x))}px`,
+            left: `${Math.max(100, Math.min(window.innerWidth - 100, selection.x))}px`,
             top: `${Math.max(60, selection.y - 48)}px`,
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m9 11-6 6v3h3l6-6" />
-            <path d="m12 8 6-6 4 4-6 6" />
-            <path d="m9 11 3-3" />
-            <path d="m13 15 3-3" />
-          </svg>
-          <span>{saving ? "저장 중…" : "하이라이트"}</span>
-        </button>
+          <button
+            type="button"
+            className="highlight-floating"
+            onClick={saveHighlight}
+            disabled={saving}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 11-6 6v3h3l6-6" />
+              <path d="m12 8 6-6 4 4-6 6" />
+            </svg>
+            <span>{saving ? "저장 중…" : "하이라이트"}</span>
+          </button>
+          <button
+            type="button"
+            className="lookup-floating"
+            onClick={lookupSelection}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+              <path d="M9 7h6M9 11h4" />
+            </svg>
+            <span>사전</span>
+          </button>
+        </div>
+      )}
+
+      {selection && (lookingUp || lookupResult || lookupError) && (
+        <div
+          className="lookup-popup"
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            position: "fixed",
+            left: `${Math.max(220, Math.min(window.innerWidth - 220, selection.x))}px`,
+            top: `${Math.max(60, selection.y + 20)}px`,
+          }}
+        >
+          <button
+            type="button"
+            className="lookup-close"
+            onClick={() => {
+              setLookupResult(null);
+              setLookupError(null);
+              setLookingUp(false);
+              window.getSelection()?.removeAllRanges();
+              setSelection(null);
+            }}
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+          <div className="lookup-headword">
+            <span className="lookup-word">{lookupResult?.word || selection.text.slice(0, 40)}</span>
+            {lookupResult?.hanja && <span className="lookup-hanja">{lookupResult.hanja}</span>}
+            {lookupResult?.pos && <span className="lookup-pos">{lookupResult.pos}</span>}
+          </div>
+          {lookupResult?.pronunciation && (
+            <div className="lookup-pron">[{lookupResult.pronunciation}]</div>
+          )}
+          {lookingUp && (
+            <div className="lookup-loading">
+              <span className="spinner-sm" /> 사전 조회 중…
+            </div>
+          )}
+          {lookupError && (
+            <div className="lookup-error">⚠ {lookupError}</div>
+          )}
+          {lookupResult?.definition && (
+            <div className="lookup-def">{lookupResult.definition}</div>
+          )}
+          {lookupResult?.translations && (lookupResult.translations.en || lookupResult.translations.ja) && (
+            <div className="lookup-translations">
+              {lookupResult.translations.en && (
+                <div className="lookup-trans-row">
+                  <span className="lookup-trans-flag">EN</span>
+                  <span>{lookupResult.translations.en}</span>
+                </div>
+              )}
+              {lookupResult.translations.ja && (
+                <div className="lookup-trans-row">
+                  <span className="lookup-trans-flag">JA</span>
+                  <span>{lookupResult.translations.ja}</span>
+                </div>
+              )}
+            </div>
+          )}
+          {lookupResult?.example && (
+            <div className="lookup-example">"{lookupResult.example}"</div>
+          )}
+          {lookupResult?.note && (
+            <div className="lookup-note">{lookupResult.note}</div>
+          )}
+        </div>
       )}
     <div
       className={`text-reader text-reader-${mode}`}

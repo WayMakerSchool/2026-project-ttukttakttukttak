@@ -40,8 +40,6 @@ def _get_client() -> genai.Client:
 
 
 def _extract_audio_bytes(response) -> bytes:
-    """Pull the audio inline_data from a Gemini response, regardless of where
-    the SDK stuck it (parts, candidates, .audio_data, ...)."""
     candidates = getattr(response, "candidates", None) or []
     for cand in candidates:
         content = getattr(cand, "content", None)
@@ -60,7 +58,6 @@ def pcm_to_wav(
     channels: int = TTS_CHANNELS,
     bits: int = TTS_BITS,
 ) -> bytes:
-    """Prepend a minimal WAV (RIFF) header to raw PCM."""
     byte_rate = sample_rate * channels * bits // 8
     block_align = channels * bits // 8
     data_size = len(pcm)
@@ -69,16 +66,7 @@ def pcm_to_wav(
         + struct.pack("<I", 36 + data_size)
         + b"WAVE"
         + b"fmt "
-        + struct.pack(
-            "<IHHIIHH",
-            16,
-            1,  # PCM
-            channels,
-            sample_rate,
-            byte_rate,
-            block_align,
-            bits,
-        )
+        + struct.pack("<IHHIIHH", 16, 1, channels, sample_rate, byte_rate, block_align, bits)
         + b"data"
         + struct.pack("<I", data_size)
         + pcm
@@ -86,7 +74,7 @@ def pcm_to_wav(
 
 
 async def generate_page_tts(text: str, voice: str = DEFAULT_VOICE) -> bytes:
-    """Generate WAV audio for a single page's text. Returns bytes (WAV)."""
+    """Generate WAV audio for a single page's text."""
     trimmed = (text or "").strip()
     if not trimmed:
         return b""
@@ -99,9 +87,7 @@ async def generate_page_tts(text: str, voice: str = DEFAULT_VOICE) -> bytes:
             response_modalities=["AUDIO"],
             speech_config=types.SpeechConfig(
                 voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                        voice_name=voice,
-                    )
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)
                 )
             ),
         ),
