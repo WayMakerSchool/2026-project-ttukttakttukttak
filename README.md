@@ -131,6 +131,7 @@ cd firmware/test && ./run_tests.sh
 ├── book-bgm/                  # 📚 책 배경음악
 │   ├── backend/               # FastAPI 서버 (분위기 분석, 음악 스트림, TTS)
 │   ├── frontend/              # React + Vite (뷰어, 오디오 플레이어, 서재)
+│   ├── firmware/              # 책 촬영용 XIAO ESP32-S3 카메라 스케치
 │   └── README.md
 ├── vibekey-care/              # 🔑 바이브키 케어
 │   ├── app/                   # 안드로이드 앱 (Java)
