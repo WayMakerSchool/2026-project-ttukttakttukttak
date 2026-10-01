@@ -1,0 +1,17 @@
+.DS_Store
+.omc/
+*.log
+.env
+.env.local
+
+# Defensive — these are also in nested .gitignore files.
+node_modules/
+__pycache__/
+.venv/
+venv/
+*.pyc
+storage/
+*.db
+*.db-journal
+dist/
+build/
