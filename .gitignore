@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# 에디터 설정
+.vscode/
+.idea/
+
+# 의존성 폴더 (npm 등을 쓰게 될 경우)
+node_modules/
+
+# 비밀 정보 (API 키 등은 절대 올리지 마세요!)
+.env
